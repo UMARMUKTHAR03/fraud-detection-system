@@ -1,0 +1,303 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675" style="background:#070a13; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0f1d" />
+      <stop offset="50%" stop-color="#070a13" />
+      <stop offset="100%" stop-color="#050810" />
+    </linearGradient>
+    <linearGradient id="card-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#141c2e" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#0c1220" stop-opacity="0.8" />
+    </linearGradient>
+    <linearGradient id="primary-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="alert-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+    <linearGradient id="warning-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="success-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <radialGradient id="radar-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25" />
+      <stop offset="70%" stop-color="#ef4444" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#070a13" stop-opacity="0" />
+    </radialGradient>
+    <filter id="glow-filter" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="1200" height="675" fill="url(#bg-grad)" />
+
+  <!-- Background Cyber Grid -->
+  <g stroke="#1e293b" stroke-opacity="0.3" stroke-width="1">
+    <line x1="50" y1="0" x2="50" y2="675" />
+    <line x1="200" y1="0" x2="200" y2="675" />
+    <line x1="350" y1="0" x2="350" y2="675" />
+    <line x1="500" y1="0" x2="500" y2="675" />
+    <line x1="650" y1="0" x2="650" y2="675" />
+    <line x1="800" y1="0" x2="800" y2="675" />
+    <line x1="950" y1="0" x2="950" y2="675" />
+    <line x1="1100" y1="0" x2="1100" y2="675" />
+
+    <line x1="0" y1="70" x2="1200" y2="70" />
+    <line x1="0" y1="170" x2="1200" y2="170" />
+    <line x1="0" y1="270" x2="1200" y2="270" />
+    <line x1="0" y1="370" x2="1200" y2="370" />
+    <line x1="0" y1="470" x2="1200" y2="470" />
+    <line x1="0" y1="570" x2="1200" y2="570" />
+  </g>
+
+  <!-- Top Navigation / Header Bar -->
+  <rect x="30" y="24" width="1140" height="64" rx="12" fill="#0f172a" fill-opacity="0.75" stroke="#334155" stroke-width="1" />
+  
+  <!-- Logo & Title -->
+  <g transform="translate(50, 42)">
+    <!-- Shield Icon -->
+    <path d="M14 2L3 7V13C3 19.5 7.8 25.5 14 27C20.2 25.5 25 19.5 25 13V7L14 2Z" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444" stroke-width="2" />
+    <path d="M9 13L13 17L19 10" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="36" y="16" fill="#f8fafc" font-size="19" font-weight="800" letter-spacing="0.5">FraudGuard AI</text>
+    <text x="36" y="28" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="1.5">ENTERPRISE FRAUD INTELLIGENCE ENGINE</text>
+  </g>
+
+  <!-- Live Status & Telemetry Pill -->
+  <g transform="translate(640, 40)">
+    <rect width="260" height="32" rx="16" fill="#064e3b" fill-opacity="0.4" stroke="#10b981" stroke-width="1" />
+    <circle cx="18" cy="16" r="5" fill="#10b981" filter="url(#glow-filter)" />
+    <text x="32" y="20" fill="#a7f3d0" font-size="11" font-weight="700">INFERENCE: 4.8ms | AUC: 0.984</text>
+  </g>
+
+  <!-- Author Badge -->
+  <g transform="translate(920, 40)">
+    <rect width="230" height="32" rx="16" fill="#1e1b4b" fill-opacity="0.6" stroke="#6366f1" stroke-width="1" />
+    <text x="18" y="20" fill="#c7d2fe" font-size="11" font-weight="700">ARCHITECT: UMAR MUKTHAR</text>
+  </g>
+
+  <!-- ==================== LEFT COLUMN: LIVE TRANSACTION STREAM ==================== -->
+  <g transform="translate(30, 105)">
+    <!-- Column Card Background -->
+    <rect width="360" height="500" rx="14" fill="url(#card-grad)" stroke="#1e293b" stroke-width="1" />
+    
+    <!-- Header -->
+    <text x="20" y="32" fill="#f8fafc" font-size="14" font-weight="700">⚡ Live Ingestion Stream</text>
+    <rect x="250" y="18" width="90" height="22" rx="11" fill="#1e293b" stroke="#334155" stroke-width="1" />
+    <circle cx="262" cy="29" r="4" fill="#06b6d4" />
+    <text x="272" y="33" fill="#38bdf8" font-size="10" font-weight="600">34 txn/sec</text>
+
+    <!-- Transaction 1 (Critical Fraud Alert) -->
+    <g transform="translate(16, 50)">
+      <rect width="328" height="98" rx="10" fill="#1f1315" stroke="#ef4444" stroke-width="1.5" />
+      <rect x="12" y="12" width="70" height="20" rx="4" fill="#7f1d1d" />
+      <text x="18" y="26" fill="#fca5a5" font-size="10" font-weight="800">CRITICAL 97%</text>
+      <text x="90" y="26" fill="#f8fafc" font-size="12" font-weight="700">$4,850.00 USD</text>
+      <text x="245" y="25" fill="#ef4444" font-size="11" font-weight="700">BLOCKED</text>
+      
+      <text x="14" y="52" fill="#94a3b8" font-size="11">Merchant: CryptoExchange Overseas</text>
+      <text x="14" y="70" fill="#64748b" font-size="10">Geo-Velocity: New York → Singapore (14m jump)</text>
+      <text x="14" y="86" fill="#f87171" font-size="10" font-weight="600">Alert: Impossible velocity + New Device ID</text>
+    </g>
+
+    <!-- Transaction 2 (Normal Transaction) -->
+    <g transform="translate(16, 160)">
+      <rect width="328" height="98" rx="10" fill="#0c1a1a" stroke="#10b981" stroke-width="1" stroke-opacity="0.6" />
+      <rect x="12" y="12" width="60" height="20" rx="4" fill="#064e3b" />
+      <text x="18" y="26" fill="#6ee7b7" font-size="10" font-weight="800">LOW 1.8%</text>
+      <text x="80" y="26" fill="#f8fafc" font-size="12" font-weight="700">$42.50 USD</text>
+      <text x="240" y="25" fill="#10b981" font-size="11" font-weight="700">APPROVED</text>
+      
+      <text x="14" y="52" fill="#94a3b8" font-size="11">Merchant: Whole Foods Market #108</text>
+      <text x="14" y="70" fill="#64748b" font-size="10">Cardholder: Primary POS Terminal (Chip & PIN)</text>
+      <text x="14" y="86" fill="#34d399" font-size="10" font-weight="600">Trusted behavioral profile match (99.4%)</text>
+    </g>
+
+    <!-- Transaction 3 (High Warning) -->
+    <g transform="translate(16, 270)">
+      <rect width="328" height="98" rx="10" fill="#1c160c" stroke="#f59e0b" stroke-width="1" />
+      <rect x="12" y="12" width="60" height="20" rx="4" fill="#78350f" />
+      <text x="18" y="26" fill="#fcd34d" font-size="10" font-weight="800">HIGH 78%</text>
+      <text x="80" y="26" fill="#f8fafc" font-size="12" font-weight="700">$1,299.00 USD</text>
+      <text x="220" y="25" fill="#f59e0b" font-size="11" font-weight="700">CHALLENGED</text>
+      
+      <text x="14" y="52" fill="#94a3b8" font-size="11">Merchant: Apple Store Online</text>
+      <text x="14" y="70" fill="#64748b" font-size="10">Trigger: Rapid amount deviation (5.2x regular)</text>
+      <text x="14" y="86" fill="#fbbf24" font-size="10" font-weight="600">Action: SMS OTP & Biometric step-up sent</text>
+    </g>
+
+    <!-- Transaction 4 (Medium Risk) -->
+    <g transform="translate(16, 380)">
+      <rect width="328" height="98" rx="10" fill="#131926" stroke="#334155" stroke-width="1" />
+      <rect x="12" y="12" width="70" height="20" rx="4" fill="#1e293b" />
+      <text x="18" y="26" fill="#93c5fd" font-size="10" font-weight="800">MED 44%</text>
+      <text x="90" y="26" fill="#f8fafc" font-size="12" font-weight="700">$215.30 USD</text>
+      <text x="240" y="25" fill="#94a3b8" font-size="11" font-weight="700">MONITORED</text>
+      
+      <text x="14" y="52" fill="#94a3b8" font-size="11">Merchant: Cloud VPS Server Hosting</text>
+      <text x="14" y="70" fill="#64748b" font-size="10">Channel: Web Checkout via Tor Exit Node</text>
+      <text x="14" y="86" fill="#cbd5e1" font-size="10" font-weight="600">V14 PCA Anomaly detected (+0.14)</text>
+    </g>
+  </g>
+
+  <!-- ==================== CENTER COLUMN: ACTIVE RISK RADAR & ENSEMBLE ==================== -->
+  <g transform="translate(410, 105)">
+    <!-- Column Card Background -->
+    <rect width="400" height="500" rx="14" fill="url(#card-grad)" stroke="#1e293b" stroke-width="1" />
+    
+    <!-- Title -->
+    <text x="24" y="32" fill="#f8fafc" font-size="14" font-weight="700">🛡️ Deep Risk Inspection Engine</text>
+    <text x="24" y="48" fill="#94a3b8" font-size="11">TXN-849204 • Amount: $4,850.00 • Channel: Web</text>
+
+    <!-- Radar Circle / Dial -->
+    <circle cx="200" cy="165" r="95" fill="url(#radar-glow)" />
+    <circle cx="200" cy="165" r="85" fill="none" stroke="#1e293b" stroke-width="8" stroke-linecap="round" />
+    <!-- Dial Progress Arc (94%) -->
+    <circle cx="200" cy="165" r="85" fill="none" stroke="url(#alert-glow)" stroke-width="9" stroke-dasharray="534" stroke-dashoffset="35" stroke-linecap="round" transform="rotate(-90 200 165)" />
+
+    <!-- Center Metric in Dial -->
+    <text x="200" y="155" fill="#ef4444" font-size="38" font-weight="900" text-anchor="middle" filter="url(#glow-filter)">94.2%</text>
+    <text x="200" y="180" fill="#fca5a5" font-size="12" font-weight="800" text-anchor="middle" letter-spacing="1">CRITICAL RISK</text>
+    <text x="200" y="196" fill="#94a3b8" font-size="10" text-anchor="middle">Confidence: 99.1%</text>
+
+    <!-- Decision Banner -->
+    <g transform="translate(24, 275)">
+      <rect width="352" height="36" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="1" />
+      <text x="176" y="23" fill="#fee2e2" font-size="12" font-weight="800" text-anchor="middle">🚨 ACTION TAKEN: AUTOMATIC PAYMENT TERMINATION</text>
+    </g>
+
+    <!-- Ensemble Model Telemetry Breakdown -->
+    <text x="24" y="340" fill="#f8fafc" font-size="12" font-weight="700">Ensemble ML Voting Weights</text>
+    
+    <!-- Model 1: XGBoost -->
+    <g transform="translate(24, 355)">
+      <text x="0" y="12" fill="#cbd5e1" font-size="11" font-weight="600">XGBoost Gradient Boosted Trees</text>
+      <text x="352" y="12" fill="#ef4444" font-size="11" font-weight="700" text-anchor="end">96.4% Fraud</text>
+      <rect x="0" y="18" width="352" height="6" rx="3" fill="#1e293b" />
+      <rect x="0" y="18" width="339" height="6" rx="3" fill="#ef4444" />
+    </g>
+
+    <!-- Model 2: LightGBM -->
+    <g transform="translate(24, 395)">
+      <text x="0" y="12" fill="#cbd5e1" font-size="11" font-weight="600">LightGBM High-Velocity Classifier</text>
+      <text x="352" y="12" fill="#ef4444" font-size="11" font-weight="700" text-anchor="end">92.8% Fraud</text>
+      <rect x="0" y="18" width="352" height="6" rx="3" fill="#1e293b" />
+      <rect x="0" y="18" width="326" height="6" rx="3" fill="#ef4444" />
+    </g>
+
+    <!-- Model 3: Isolation Forest -->
+    <g transform="translate(24, 435)">
+      <text x="0" y="12" fill="#cbd5e1" font-size="11" font-weight="600">Isolation Forest (Unsupervised Outlier)</text>
+      <text x="352" y="12" fill="#f59e0b" font-size="11" font-weight="700" text-anchor="end">-0.42 Anomaly</text>
+      <rect x="0" y="18" width="352" height="6" rx="3" fill="#1e293b" />
+      <rect x="0" y="18" width="295" height="6" rx="3" fill="#f59e0b" />
+    </g>
+  </g>
+
+  <!-- ==================== RIGHT COLUMN: SHAP EXPLAINABILITY & BENCHMARKS ==================== -->
+  <g transform="translate(830, 105)">
+    <!-- Column Card Background -->
+    <rect width="340" height="500" rx="14" fill="url(#card-grad)" stroke="#1e293b" stroke-width="1" />
+    
+    <!-- Title -->
+    <text x="20" y="32" fill="#f8fafc" font-size="14" font-weight="700">📊 SHAP Factor Explainability</text>
+    <text x="20" y="48" fill="#94a3b8" font-size="11">Real-time local feature contribution</text>
+
+    <!-- SHAP Waterfall Bars -->
+    <!-- Feature 1 -->
+    <g transform="translate(20, 65)">
+      <text x="0" y="12" fill="#e2e8f0" font-size="11" font-weight="600">V14 PCA Dimension</text>
+      <text x="300" y="12" fill="#ef4444" font-size="11" font-weight="700" text-anchor="end">+0.38 Impact</text>
+      <rect x="0" y="18" width="300" height="7" rx="3" fill="#1e293b" />
+      <rect x="150" y="18" width="114" height="7" rx="3" fill="#ef4444" />
+    </g>
+
+    <!-- Feature 2 -->
+    <g transform="translate(20, 102)">
+      <text x="0" y="12" fill="#e2e8f0" font-size="11" font-weight="600">Geo-Velocity Jump</text>
+      <text x="300" y="12" fill="#ef4444" font-size="11" font-weight="700" text-anchor="end">+0.31 Impact</text>
+      <rect x="0" y="18" width="300" height="7" rx="3" fill="#1e293b" />
+      <rect x="150" y="18" width="93" height="7" rx="3" fill="#ef4444" />
+    </g>
+
+    <!-- Feature 3 -->
+    <g transform="translate(20, 139)">
+      <text x="0" y="12" fill="#e2e8f0" font-size="11" font-weight="600">Amount Deviation (4.8k)</text>
+      <text x="300" y="12" fill="#f59e0b" font-size="11" font-weight="700" text-anchor="end">+0.22 Impact</text>
+      <rect x="0" y="18" width="300" height="7" rx="3" fill="#1e293b" />
+      <rect x="150" y="18" width="66" height="7" rx="3" fill="#f59e0b" />
+    </g>
+
+    <!-- Feature 4 -->
+    <g transform="translate(20, 176)">
+      <text x="0" y="12" fill="#e2e8f0" font-size="11" font-weight="600">Foreign Proxy Subnet</text>
+      <text x="300" y="12" fill="#f59e0b" font-size="11" font-weight="700" text-anchor="end">+0.14 Impact</text>
+      <rect x="0" y="18" width="300" height="7" rx="3" fill="#1e293b" />
+      <rect x="150" y="18" width="42" height="7" rx="3" fill="#f59e0b" />
+    </g>
+
+    <!-- Feature 5 (Negative / Trust) -->
+    <g transform="translate(20, 213)">
+      <text x="0" y="12" fill="#e2e8f0" font-size="11" font-weight="600">Account Age (> 3 yrs)</text>
+      <text x="300" y="12" fill="#10b981" font-size="11" font-weight="700" text-anchor="end">-0.11 Impact</text>
+      <rect x="0" y="18" width="300" height="7" rx="3" fill="#1e293b" />
+      <rect x="117" y="18" width="33" height="7" rx="3" fill="#10b981" />
+    </g>
+
+    <!-- Divider -->
+    <line x1="20" y1="260" x2="320" y2="260" stroke="#1e293b" stroke-width="1" />
+
+    <!-- Performance Validation Grid -->
+    <text x="20" y="285" fill="#f8fafc" font-size="13" font-weight="700">Model Verification Benchmarks</text>
+    
+    <g transform="translate(20, 305)">
+      <!-- Metric 1 -->
+      <rect x="0" y="0" width="145" height="70" rx="8" fill="#1e293b" fill-opacity="0.5" stroke="#334155" stroke-width="1" />
+      <text x="12" y="24" fill="#94a3b8" font-size="10" font-weight="600">ROC-AUC SCORE</text>
+      <text x="12" y="52" fill="#38bdf8" font-size="22" font-weight="900">0.984</text>
+      <text x="90" y="50" fill="#10b981" font-size="10" font-weight="700">+1.2%</text>
+
+      <!-- Metric 2 -->
+      <rect x="155" y="0" width="145" height="70" rx="8" fill="#1e293b" fill-opacity="0.5" stroke="#334155" stroke-width="1" />
+      <text x="167" y="24" fill="#94a3b8" font-size="10" font-weight="600">PR-AUC SCORE</text>
+      <text x="167" y="52" fill="#a78bfa" font-size="22" font-weight="900">0.892</text>
+      <text x="245" y="50" fill="#10b981" font-size="10" font-weight="700">Top 1%</text>
+
+      <!-- Metric 3 -->
+      <rect x="0" y="80" width="145" height="70" rx="8" fill="#1e293b" fill-opacity="0.5" stroke="#334155" stroke-width="1" />
+      <text x="12" y="104" fill="#94a3b8" font-size="10" font-weight="600">PRECISION</text>
+      <text x="12" y="132" fill="#10b981" font-size="22" font-weight="900">96.8%</text>
+      <text x="90" y="130" fill="#94a3b8" font-size="10">@ 0.65</text>
+
+      <!-- Metric 4 -->
+      <rect x="155" y="80" width="145" height="70" rx="8" fill="#1e293b" fill-opacity="0.5" stroke="#334155" stroke-width="1" />
+      <text x="167" y="104" fill="#94a3b8" font-size="10" font-weight="600">RECALL</text>
+      <text x="167" y="132" fill="#f59e0b" font-size="22" font-weight="900">94.2%</text>
+      <text x="245" y="130" fill="#94a3b8" font-size="10">Fraud</text>
+    </g>
+
+    <!-- Low False Positive Note -->
+    <g transform="translate(20, 465)">
+      <rect width="300" height="22" rx="6" fill="#064e3b" fill-opacity="0.4" />
+      <text x="150" y="15" fill="#6ee7b7" font-size="10" font-weight="700" text-anchor="middle">⚡ Ultra-Low False Positive Rate: 0.04%</text>
+    </g>
+  </g>
+
+  <!-- Bottom Brand Footer -->
+  <g transform="translate(30, 620)">
+    <text x="0" y="24" fill="#64748b" font-size="12" font-weight="500">FraudGuard AI &bull; Production Financial Cyber Defense &bull; FastAPI + Scikit-Learn + XGBoost + LightGBM + SHAP</text>
+    <text x="1140" y="24" fill="#818cf8" font-size="12" font-weight="700" text-anchor="end">Engineered &amp; Maintained by UMAR MUKTHAR &bull; MIT License 2026</text>
+  </g>
+</svg>
