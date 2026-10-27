@@ -11,7 +11,7 @@ Production-ready feature engineering with:
 - Memory-efficient processing for large datasets
 - Feature store integration support
 
-Author: Sunny Nguyen
+Author: UMAR MUKTHAR (@UMARMUKTHAR03)
 Version: 2.0.0
 """
 
