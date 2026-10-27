@@ -9,7 +9,7 @@ Interactive Streamlit dashboard for monitoring fraud detection system:
 - System health metrics
 - Historical trend analysis
 
-Author: Sunny Nguyen
+Author: UMAR MUKTHAR (@UMARMUKTHAR03)
 """
 
 import os
@@ -516,7 +516,7 @@ def main():
     with col1:
         st.markdown("**🛡️ Fraud Detection System**")
     with col2:
-        st.markdown("**👨‍💻 Built by Sunny Nguyen**")
+        st.markdown("**👨‍💻 Architected by UMAR MUKTHAR**")
     with col3:
         st.markdown(
             f"**📅 Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}**"
