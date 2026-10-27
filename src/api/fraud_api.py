@@ -10,7 +10,7 @@ Production-ready FastAPI application for real-time fraud detection with:
 - Performance monitoring and logging
 - Health checks and status endpoints
 
-Author: Sunny Nguyen
+Author: UMAR MUKTHAR (@UMARMUKTHAR03)
 """
 
 import logging
