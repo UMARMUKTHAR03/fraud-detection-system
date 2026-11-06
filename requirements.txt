@@ -16,6 +16,9 @@ shap>=0.42.0
 # API and web framework
 fastapi>=0.95.0
 uvicorn>=0.20.0
+pydantic>=2.0.0
+httpx>=0.25.0
+python-multipart>=0.0.9
 streamlit>=1.25.0
 
 # Data processing

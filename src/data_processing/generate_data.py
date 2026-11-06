@@ -333,6 +333,34 @@ class FraudDatasetGenerator:
         return True
 
 
+def create_fraud_dataset(
+    n_samples: int = 10000,
+    fraud_rate: float = 0.017,
+    time_period_days: int = 2,
+    random_state: int = 42
+) -> pd.DataFrame:
+    """
+    Convenience function to generate a synthetic fraud dataset.
+
+    Args:
+        n_samples: Total number of transactions
+        fraud_rate: Ratio of fraudulent transactions (e.g. 0.017 = 1.7%)
+        time_period_days: Days spanning the dataset
+        random_state: Random seed for reproducibility
+
+    Returns:
+        pd.DataFrame containing synthetic transactions
+    """
+    config = DatasetConfig(
+        n_samples=n_samples,
+        fraud_rate=fraud_rate,
+        time_period_days=time_period_days,
+        random_state=random_state
+    )
+    generator = FraudDatasetGenerator(config)
+    return generator.create_fraud_dataset()
+
+
 def generate_and_save_data(config: Optional[DatasetConfig] = None) -> pd.DataFrame:
     """
     Main function to generate and save fraud detection dataset.

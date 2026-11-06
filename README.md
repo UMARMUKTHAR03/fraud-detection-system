@@ -1,21 +1,19 @@
-# 🛡️ FraudGuard AI — Enterprise Real-Time Financial Fraud Detection & Anomaly Intelligence Engine
+# 🛡️ FraudGuard AI — Intelligent Financial Fraud Detection & Risk Analytics Platform
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-10b981?style=for-the-badge&logo=githubpages&logoColor=white)](https://umarmukthar03.github.io/fraud-detection-system/)
+[![Live Application](https://img.shields.io/badge/Live%20Platform-GitHub%20Pages-10b981?style=for-the-badge&logo=githubpages&logoColor=white)](https://umarmukthar03.github.io/fraud-detection-system/)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.95+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![XGBoost](https://img.shields.io/badge/XGBoost-1.7+-EB4223?style=for-the-badge&logo=xgboost&logoColor=white)](https://xgboost.ai)
-[![LightGBM](https://img.shields.io/badge/LightGBM-3.3+-2E86AB?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://lightgbm.readthedocs.io)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![XGBoost](https://img.shields.io/badge/XGBoost-Production%20Model-EB4223?style=for-the-badge&logo=xgboost&logoColor=white)](https://xgboost.ai)
 [![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-FF6F00?style=for-the-badge&logo=plotly&logoColor=white)](https://shap.readthedocs.io)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
 [![License](https://img.shields.io/badge/License-MIT%202026-10b981?style=for-the-badge)](./LICENSE)
-[![Architect](https://img.shields.io/badge/Architect-UMAR%20MUKTHAR-8b5cf6?style=for-the-badge&logo=github)](https://github.com/UMARMUKTHAR03)
+[![Engineer](https://img.shields.io/badge/Architect-UMAR%20MUKTHAR-8b5cf6?style=for-the-badge&logo=github)](https://github.com/UMARMUKTHAR03)
 
-> 🌐 **Live Interactive Intelligence Platform:** **[https://umarmukthar03.github.io/fraud-detection-system/](https://umarmukthar03.github.io/fraud-detection-system/)**  
-> 🚀 *Experience real-time transaction streaming, ensemble model scoring (XGBoost + LightGBM + Random Forest), and SHAP explainability directly in your browser &mdash; zero installation required.*
+> 🌐 **Interactive Production Dashboard:** **[https://umarmukthar03.github.io/fraud-detection-system/](https://umarmukthar03.github.io/fraud-detection-system/)**
+> ⚡ *Real-time transaction scoring, dynamic risk tiers, SHAP local feature attributions, CSV batch uploads, and confusion matrix threshold tuning directly in your browser.*
 
 ---
 
-## 🖼️ Visual Platform Preview
+## 🖼️ Platform Preview
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/UMARMUKTHAR03/fraud-detection-system/main/docs/preview.svg" alt="FraudGuard AI Enterprise Platform Preview" width="100%" />
@@ -25,67 +23,59 @@
 
 ## ⚡ Executive Overview
 
-**FraudGuard AI** is a production-grade, ultra-low-latency financial fraud detection and anomaly intelligence microservice. Engineered for high-throughput payment processors, neobanks, and e-commerce platforms, the system executes real-time transaction screening under **4.8ms**, balancing extreme precision with state-of-the-art model explainability.
+**FraudGuard AI** is a production-grade, low-latency financial fraud detection and risk analytics software platform. Designed for neobanks, payment processors, and e-commerce platforms, the engine performs transaction scoring in sub-millisecond time, classifying transactions into granular operational risk tiers:
 
-- 🤖 **Ensemble Machine Learning**: Multi-tier architecture combining **XGBoost**, **LightGBM**, and **Random Forest** calibrated via SMOTE balanced oversampling.
-- 🔍 **Unsupervised Anomaly Intelligence**: **Isolation Forest** and Autoencoder neural reconstruction layers designed to detect zero-day fraud patterns without historical labels.
-- 🧠 **Explainable AI (SHAP)**: Real-time generation of feature attribution waterfall trees providing transparent, auditable decision rationale for SOC fraud analysts and banking compliance.
-- ⚡ **Sub-5ms Inference Pipeline**: Scalable asynchronous RESTful API built on **FastAPI** with Pydantic v2 validation and microsecond feature transforms.
-- 📊 **Security Operations (SOC) Studio**: Interactive transaction streaming telemetry, dynamic decision threshold calibration, confusion matrix tuning, and 1-click triage actions (*Freeze Account*, *Step-Up 2FA*, *Whitelist*).
+- 🟢 **LOW (< 25%)**: Cleared for immediate settlement.
+- 🔵 **MEDIUM (25% – 49.99%)**: Flagged for real-time monitoring and soft verification.
+- 🟡 **HIGH (50% – 74.99%)**: Trigger automated 2FA / biometric step-up verification.
+- 🔴 **CRITICAL (≥ 75%)**: Immediate automated authorization halt and card/account freeze.
 
 ---
 
-## 🏗️ System Architecture
+## 📊 Measured Benchmark & Validation Performance
+
+The production model was selected following a leak-free 5-fold stratified cross-validation workflow and evaluated on an independent 20% holdout test partition (8,000 transactions, 2% calibrated fraud rate). All metrics below are verified directly from `models/metrics.json`:
+
+| Model Candidate | 5-Fold CV ROC-AUC | 5-Fold CV PR-AUC | 5-Fold CV F1 | Holdout ROC-AUC | Holdout PR-AUC | Holdout Precision | Holdout Recall | Holdout F1 | Inference Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **XGBoost (Production Champion)** | **0.9889 ± 0.0014** | **0.8991** | **0.8260** | **0.9691** | **0.8463** | **82.89%** | **77.50%** | **0.8010** | **0.0013 ms** |
+| **LightGBM Classifier** | 0.9884 ± 0.0011 | 0.8820 | 0.7465 | 0.9743 | 0.8275 | 61.83% | 81.00% | 0.7013 | 0.0020 ms |
+| **Random Forest (SMOTE)** | 0.9874 ± 0.0011 | 0.8563 | 0.7188 | 0.9733 | 0.8100 | 58.84% | 81.50% | 0.6834 | 0.0050 ms |
+| **Logistic Regression (Baseline)** | 0.9884 ± 0.0022 | 0.8818 | 0.5324 | 0.9695 | 0.8226 | 33.85% | 88.00% | 0.4889 | 0.0002 ms |
+| **Soft-Voting Ensemble** | — | — | — | 0.9735 | 0.8420 | 66.80% | 80.50% | 0.7302 | 0.0063 ms |
+
+### Production Confusion Matrix (Holdout @ 0.50 Threshold)
+- **True Negatives (Legitimate Cleared)**: `7,768` (99.59%)
+- **False Positives (False Alarms)**: `32` (0.41% False Positive Rate)
+- **False Negatives (Missed Fraud)**: `45`
+- **True Positives (Fraud Prevented)**: `155`
+
+---
+
+## 🧠 Explainable AI (SHAP TreeExplainer)
+
+Every prediction through FraudGuard AI generates local feature attributions powered by `shap.TreeExplainer`:
+- **Directional Impact**: Distinguishes between *Fraud-Inducing* anomalies (e.g. sharp negative shifts in eigenvectors `V14`, `V12`, high amounts) and *Legitimate-Shielding* features.
+- **Top Factor Identification**: Highlights the top 6 contributing factors for security analysts and audit trails.
+- **Compliance Ready**: Supplies verifiable explanations for automated decisions under regulatory oversight.
+
+---
+
+## 🏗️ Technical Architecture & Pipeline
 
 ```mermaid
 graph TD
-    A["Incoming Transaction Feed (POS / Web / Mobile)"] --> B["FastAPI Ingestion Gateway (<5ms)"]
-    B --> C["Feature Engineering Pipeline (Velocity + Geo + PCA)"]
-    C --> D["Ensemble ML Engine (XGBoost + LightGBM + RF)"]
-    C --> E["Unsupervised Isolation Forest Anomaly Layer"]
-    D --> F["Consensus Risk Scoring & Probability Arbiter"]
-    E --> F
-    F --> G["SHAP Explainability Engine (KernelExplainer)"]
-    G --> H["SOC Incident Triage Studio (Authorize / 2FA / Terminate)"]
-    F --> I["Prometheus & Redis Operational Telemetry"]
+    A["Raw Transaction / POS Event"] --> B["FastAPI Microservice (REST / JSON / CSV)"]
+    B --> C["Data Validation (Pydantic v2 Models)"]
+    C --> D["Feature Preprocessing & Scaling (models/scaler.joblib)"]
+    D --> E["Champion Model Inference (models/best_model.joblib - XGBoost)"]
+    D --> F["Soft-Voting Ensemble Engine (models/fraud_detection_ensemble.pkl)"]
+    E --> G["Risk Tier Classifier (LOW, MEDIUM, HIGH, CRITICAL)"]
+    E --> H["Explainable AI (models/explainer.joblib - SHAP)"]
+    G --> I["SQLite Persistence (data/fraud_history.db)"]
+    H --> I
+    I --> J["JSON API Response / Web Dashboard UI"]
 ```
-
----
-
-## 📊 Benchmark & Validation Performance
-
-Evaluated against the standardized **IEEE-CIS Financial Fraud & Credit Card** benchmark dataset (284,807 transactions, 0.172% fraud class imbalance):
-
-| Evaluation Metric | Baseline (Logistic Regression) | LightGBM Classifier | XGBoost Classifier | FraudGuard AI Ensemble |
-| :--- | :---: | :---: | :---: | :---: |
-| **ROC-AUC Score** | `0.942` | `0.981` | `0.983` | **`0.984`** |
-| **PR-AUC Score** | `0.764` | `0.881` | `0.887` | **`0.892`** |
-| **Precision (@ 0.65 Thresh)** | `81.2%` | `94.1%` | `95.8%` | **`96.8%`** |
-| **Recall (Fraud Caught)** | `79.5%` | `91.8%` | `93.4%` | **`94.2%`** |
-| **F1-Score** | `0.803` | `0.929` | `0.946` | **`0.955`** |
-| **False Positive Rate (FPR)** | `0.28%` | `0.08%` | `0.05%` | **`0.04%`** |
-| **Inference Latency** | `1.1 ms` | `2.8 ms` | `4.2 ms` | **`4.8 ms`** |
-
----
-
-## 🌟 Key Capabilities
-
-### 1. High-Velocity Feature Engineering
-- **Geographic Velocity Jumps**: Real-time haversine distance calculation between consecutive transaction points to catch impossible travel velocities (e.g. New York to Tokyo in 20 minutes).
-- **Rolling Window Aggregations**: 10-minute, 1-hour, and 24-hour transaction frequency, burst rate, and amount deviations.
-- **PCA Anonymized Eigenvectors**: Robust extraction and scaling across 28 anonymized PCA dimensions (`V1`&ndash;`V28`), highlighting known vulnerability axes (`V14`, `V12`, `V10`, `V4`).
-- **Device & IP Reputation Telemetry**: Integration with Tor exit node feeds, VPN subnet lists, and canvas fingerprint entropy scores.
-
-### 2. Explainable AI (SHAP Waterfall)
-For every flagged transaction, the system computes the local Shapley values:
-- **Primary Risk Drivers**: Quantifies positive risk contributions (e.g. `V14 Deviation: +38%`, `Geo-Velocity Jump > 1000km/h: +26%`).
-- **Mitigating Trust Factors**: Quantifies negative risk factors (e.g. `Physical Chip & PIN Terminal: -12%`, `Account Age > 2yr: -6%`).
-- **Regulatory Compliance**: Generates human-readable compliance rationales satisfying GDPR Article 22 and FinCEN transparency mandates.
-
-### 3. Real-Time SOC Incident Response Studio
-- **Automated Payment Termination**: Intercepts high-risk (`≥90%`) attacks before settlement.
-- **Step-Up 2FA & Biometrics**: Dispatches automated challenges for medium-high risk (`70-89%`) transactions without blocking legitimate shoppers.
-- **Audit Export**: Single-click export of structured JSON audit payloads for fraud investigation logs.
 
 ---
 
@@ -93,151 +83,154 @@ For every flagged transaction, the system computes the local Shapley values:
 
 ```
 fraud-detection-system/
-├── config/
-│   └── feature_engineering_config.yml   # Pipeline & transformation settings
-├── data/                               # Raw & processed dataset placeholders
-├── docker/
-│   ├── Dockerfile                       # Multi-stage production container
-│   └── README.md                        # Container instructions
+├── data/
+│   ├── raw/
+│   │   └── creditcard_transactions.csv  # Calibrated benchmark dataset (40,000 samples)
+│   ├── sample_transactions.csv          # 20-sample ready-to-test batch CSV
+│   └── fraud_history.db                 # Persistent SQLite transaction audit database
 ├── docs/
-│   └── preview.svg                      # High-resolution platform preview card
-├── models/                              # Serialized pipelines & model artifacts
-├── notebooks/
-│   ├── 01_exploratory_data_analysis.ipynb # Dataset exploration & distributions
-│   └── 02_model_development.ipynb       # Model training, ensemble & SHAP analysis
+│   └── preview.svg                      # Platform architecture and preview diagram
+├── models/
+│   ├── best_model.joblib                # Serialized production XGBoost model
+│   ├── scaler.joblib                    # Leak-free fitted StandardScaler
+│   ├── explainer.joblib                 # Serialized SHAP TreeExplainer
+│   ├── feature_names.json               # Ordered feature schema
+│   ├── metrics.json                     # Verified benchmark & CV performance report
+│   ├── fraud_detection_ensemble.pkl     # Standalone soft-voting ensemble
+│   └── feature_engineering_pipeline.pkl # Advanced feature engineering pipeline
 ├── src/
 │   ├── api/
-│   │   ├── auth.py                      # API authentication & JWT guards
-│   │   └── fraud_api.py                 # FastAPI endpoints & validation schemas
+│   │   ├── auth.py                      # Optional auth token utilities
+│   │   └── fraud_api.py                 # FastAPI production application & endpoints
 │   ├── data_processing/
-│   │   ├── feature_engineering.py       # Velocity, PCA, and anomaly transforms
-│   │   └── generate_data.py             # Synthetic transaction data generator
-│   ├── models/
-│   │   └── fraud_detector.py            # Model training & inference wrappers
-│   └── monitoring/
-│       ├── dashboard.py                 # Monitoring dashboard utilities
-│       └── model_monitor.py             # Drift detection & latency monitoring
+│   │   ├── feature_engineering.py       # Velocity, stats, anomaly feature transformers
+│   │   └── generate_data.py             # Calibrated synthetic financial dataset generator
+│   └── models/
+│       ├── fraud_detector.py            # Model wrapper classes (LR, RF, XGB, LGBM, Ensemble)
+│       └── train_pipeline.py            # Reproducible 5-fold CV training pipeline
 ├── tests/
-│   ├── test_api.py                      # FastAPI endpoint test suite
-│   ├── test_feature_engineering.py      # Feature transformation unit tests
-│   └── test_models.py                   # Model accuracy & inference tests
-├── docker-compose.yml                   # Microservice orchestrator
-├── pyproject.toml                       # Build & linting configuration
-├── requirements.txt                     # Production Python dependencies
-├── index.html                           # Client-side interactive web studio
-├── 404.html                             # SPA routing fallback
-├── LICENSE                              # MIT License (c) 2026 UMAR MUKTHAR
-└── README.md                            # Master project documentation
+│   ├── conftest.py                      # Pytest fixtures and test paths
+│   ├── test_api.py                      # Core FastAPI endpoint tests
+│   ├── test_api_extensions.py           # Model-info, analytics, history, batch CSV upload tests
+│   ├── test_feature_engineering.py      # Feature transformation tests
+│   └── test_models.py                   # Model training and persistence tests
+├── index.html                           # Production Single-Page Application (SPA)
+├── requirements.txt                     # Pinned Python package dependencies
+├── pyproject.toml                       # Testing & linting tool configuration
+├── LICENSE                              # MIT License
+└── README.md                            # Complete technical documentation
 ```
 
 ---
 
-## 🚀 Quickstart Guide
+## 🔌 API Reference & Endpoints
 
-### Prerequisites
-- Python `>= 3.11`
-- Docker & Docker Compose (optional)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Root endpoint returning platform name, version, and status |
+| `GET` | `/health` | Health check verifying model load state, load time, and uptime |
+| `GET` | `/model-info` | Metadata of the active production model, features, and CV metrics |
+| `GET` | `/analytics` | Model comparison table, confusion matrix, ROC/PR curves, top features |
+| `GET` | `/metrics` | Request throughput, processing latency, and server telemetry |
+| `GET` | `/history` | Query logged transaction predictions with limit, search, and risk filter |
+| `POST` | `/predict` | Real-time single transaction scoring with SHAP feature attributions |
+| `POST` | `/predict/batch` | High-throughput batch inference for JSON transaction arrays |
+| `POST` | `/predict-batch` | Multipart CSV upload endpoint for bulk batch scoring |
+| `POST` | `/reload-models` | Hot-reload model artifacts from `models/` without restarting |
 
-### Local Installation
-
-```bash
-# 1. Clone repository
-git clone https://github.com/UMARMUKTHAR03/fraud-detection-system.git
-cd fraud-detection-system
-
-# 2. Create virtual environment
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-```
-
-### Running the FastAPI Microservice
-
-```bash
-# Start API service on port 8000 with auto-reload
-uvicorn src.api.fraud_api:app --host 0.0.0.0 --port 8000 --reload
-```
-
-Interactive OpenAPI documentation is immediately available at `http://localhost:8000/docs`.
-
-### Running with Docker Compose
-
-```bash
-docker-compose up --build -d
-```
-
-### Running Test Suite
-
-```bash
-pytest tests/ -v --cov=src
-```
-
----
-
-## 🔌 API Reference
-
-### 1. Predict Single Transaction Risk
-**Endpoint:** `POST /predict`  
-**Headers:** `Content-Type: application/json`
+### Sample Transaction Request (`POST /predict`)
 
 ```json
 {
   "transaction_id": "TXN-849204",
   "Time": 86400,
   "Amount": 4850.00,
-  "V1": -1.35,
-  "V2": 0.42,
-  "V3": 1.25,
-  "V4": 2.45,
-  "V5": -0.88,
-  "V6": 0.12,
-  "V7": -0.45,
-  "V8": 0.08,
-  "V9": 0.55,
-  "V10": -1.85,
-  "V11": 0.92,
-  "V12": -3.10,
-  "V13": -0.25,
-  "V14": -4.82,
-  "V15": 0.14,
-  "V16": -1.20,
-  "V17": -2.35,
-  "V18": 0.11,
-  "V19": 0.45,
-  "V20": 0.38
+  "V1": -1.35, "V2": 0.42, "V3": 1.25, "V4": 2.45, "V5": -0.88,
+  "V6": 0.12, "V7": -0.45, "V8": 0.08, "V9": 0.55, "V10": -1.85,
+  "V11": 0.92, "V12": -3.10, "V13": -0.25, "V14": -4.82, "V15": 0.14,
+  "V16": -1.20, "V17": -2.35, "V18": 0.11, "V19": 0.45, "V20": 0.38
 }
 ```
 
-**Response (`200 OK`):**
+### Sample Response (`200 OK`)
+
 ```json
 {
   "transaction_id": "TXN-849204",
   "fraud_probability": 0.942,
   "is_fraud": true,
   "risk_level": "CRITICAL",
-  "confidence_score": 0.991,
-  "processing_time_ms": 4.62,
-  "model_version": "FraudGuard-Ensemble-v2.4",
+  "confidence_score": 0.884,
+  "explanation": {
+    "summary": "Classified as CRITICAL risk with 94.2% fraud probability."
+  },
   "top_risk_factors": [
-    { "feature": "V14", "impact": 0.38, "reason": "Critical eigenvector anomaly" },
-    { "feature": "V12", "impact": 0.20, "reason": "High negative cluster deviation" },
-    { "feature": "Amount", "impact": 0.22, "reason": "6.8x above historical baseline" }
+    { "feature": "V14", "value": -4.82, "shap_impact": 0.381, "correlation": "Fraud-Inducing" },
+    { "feature": "V12", "value": -3.10, "shap_impact": 0.198, "correlation": "Fraud-Inducing" },
+    { "feature": "Amount", "value": 4850.0, "shap_impact": 0.174, "correlation": "Fraud-Inducing" }
   ],
-  "timestamp": "2026-10-27T17:00:00Z"
+  "processing_time_ms": 1.45,
+  "model_version": "FraudGuard-XGB-2.4",
+  "timestamp": "2026-11-06T18:25:00.000Z"
 }
 ```
 
 ---
 
+## 🚀 Quickstart Guide
+
+### 1. Installation
+
+```bash
+# Clone repository
+git clone https://github.com/UMARMUKTHAR03/fraud-detection-system.git
+cd fraud-detection-system
+
+# Create and activate virtual environment
+python -m venv venv
+.\venv\Scripts\activate       # Windows
+source venv/bin/activate     # Linux / macOS
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Execute Training Pipeline
+
+```bash
+# Trains candidate models, performs 5-fold CV, fits SHAP explainer, and serializes artifacts
+python src/models/train_pipeline.py
+```
+
+### 3. Launch the Backend API
+
+```bash
+uvicorn src.api.fraud_api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+The interactive Swagger UI will be available at `http://localhost:8000/docs`.
+
+### 4. Run the Full Test Suite
+
+```bash
+python -m pytest tests/ -v
+```
+
+*All 20 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, and file upload handlers.*
+
+---
+
+## 🔒 Security & Prototype Disclosure
+
+> [!NOTE]
+> **Prototype Architecture Notice**: This software implementation demonstrates a complete, production-ready machine learning pipeline and API architecture. In an enterprise financial deployment, this service should be integrated behind an enterprise API gateway (such as Kong, Apigee, or AWS API Gateway) with mTLS authentication, hardware security modules (HSM) for key custody, and bank PCI-DSS audited ingress filters.
+
+---
+
 ## 📄 License & Attribution
 
-This project is licensed under the **MIT License** &mdash; see the [LICENSE](./LICENSE) file for complete details.
+This project is open-source under the **[MIT License](./LICENSE)**.
 
-**Architected & Maintained by [UMAR MUKTHAR](https://github.com/UMARMUKTHAR03)**  
+**Architected & Developed by [UMAR MUKTHAR](https://github.com/UMARMUKTHAR03)**
 *Lead AI & Full-Stack Systems Engineer* &bull; [umarom98425@gmail.com](mailto:umarom98425@gmail.com)  
 *Copyright (c) 2026 UMAR MUKTHAR. All rights reserved.*

@@ -224,14 +224,23 @@ class AdvancedFeatureEngineering:
 
             # Box-Cox transformation for normality
             if (df["Amount"] > 0).all():
-                df["amount_boxcox"], lambda_param = stats.boxcox(df["Amount"] + 1)
-                self.feature_stats["amount_boxcox_lambda"] = lambda_param
+                if len(df["Amount"].unique()) > 1:
+                    df["amount_boxcox"], lambda_param = stats.boxcox(df["Amount"] + 1)
+                    self.feature_stats["amount_boxcox_lambda"] = lambda_param
+                elif "amount_boxcox_lambda" in self.feature_stats:
+                    lambda_param = self.feature_stats["amount_boxcox_lambda"]
+                    df["amount_boxcox"] = stats.boxcox(df["Amount"] + 1, lmbda=lambda_param)
+                else:
+                    df["amount_boxcox"] = np.log1p(df["Amount"])
 
             # Binning strategies
             df["amount_bin_quantile"] = pd.qcut(
                 df["Amount"], q=10, labels=False, duplicates="drop"
             )
             df["amount_bin_log"] = pd.cut(np.log1p(df["Amount"]), bins=10, labels=False)
+            df["amount_category"] = pd.qcut(
+                df["Amount"], q=5, labels=False, duplicates="drop"
+            )
 
             # Statistical position
             amount_mean = df["Amount"].mean()
@@ -401,6 +410,7 @@ class AdvancedFeatureEngineering:
             v_zscores = np.abs(stats.zscore(v_data, axis=1, nan_policy="omit"))
             df["v_outliers_2sigma"] = (v_zscores > 2).sum(axis=1)
             df["v_outliers_3sigma"] = (v_zscores > 3).sum(axis=1)
+            df["v_outlier_count"] = df["v_outliers_3sigma"]
 
             # Correlation features
             if "Amount" in df.columns:
@@ -456,10 +466,19 @@ class AdvancedFeatureEngineering:
                 df["anomaly_score_iforest"] = iso_forest.fit_predict(X)
                 df["anomaly_score_iforest_raw"] = iso_forest.score_samples(X)
                 self.anomaly_detectors["isolation_forest"] = iso_forest
+                self.anomaly_detectors["isolation_forest_cols"] = list(numerical_cols)
             elif "isolation_forest" in self.anomaly_detectors:
                 iso_forest = self.anomaly_detectors["isolation_forest"]
-                df["anomaly_score_iforest"] = iso_forest.predict(X)
-                df["anomaly_score_iforest_raw"] = iso_forest.score_samples(X)
+                if "isolation_forest_cols" in self.anomaly_detectors:
+                    cols = self.anomaly_detectors["isolation_forest_cols"]
+                    X_aligned = pd.DataFrame(index=df.index)
+                    for c in cols:
+                        X_aligned[c] = df[c] if c in df.columns else 0.0
+                    df["anomaly_score_iforest"] = iso_forest.predict(X_aligned)
+                    df["anomaly_score_iforest_raw"] = iso_forest.score_samples(X_aligned)
+                else:
+                    df["anomaly_score_iforest"] = iso_forest.predict(X)
+                    df["anomaly_score_iforest_raw"] = iso_forest.score_samples(X)
 
             # Local Outlier Factor (approximation for speed)
             # In production, use sklearn's LocalOutlierFactor
@@ -884,14 +903,18 @@ class AdvancedFeatureEngineering:
         Returns:
             Array of Mahalanobis distances
         """
-        mean = X.mean()
-        cov = X.cov()
-        cov_inv = np.linalg.pinv(cov)  # Pseudo-inverse for stability
+        try:
+            if len(X) <= 1:
+                return np.zeros(len(X))
+            mean = X.mean()
+            cov = X.cov()
+            cov_inv = np.linalg.pinv(cov)  # Pseudo-inverse for stability
 
-        diff = X - mean
-        md = np.sqrt(np.sum(diff.values @ cov_inv * diff.values, axis=1))
-
-        return md
+            diff = X - mean
+            md = np.sqrt(np.maximum(0, np.sum(diff.values @ cov_inv * diff.values, axis=1)))
+            return md
+        except Exception:
+            return np.zeros(len(X))
 
     def _safe_transform_encoder(self, df: pd.DataFrame, column: str) -> pd.DataFrame:
         """
@@ -1013,25 +1036,23 @@ class AdvancedFeatureEngineering:
         df = self.encode_categorical_features(df, fit=False)
         df = self.scale_features(df, fit=False)
 
+        # Select same features first if feature selection was performed during fit
+        if self.selected_features:
+            missing_features = [f for f in self.selected_features if f not in df.columns]
+            if missing_features:
+                for feature in missing_features:
+                    df[feature] = 0
+            df = df[self.selected_features]
+
         # Apply dimensionality reduction
         if self.config.enable_pca:
             df = self.apply_dimensionality_reduction(df, fit=False)
 
-        # Select same features
-        if self.selected_features:
-            # NOTE: removed unused 'available_features' variable (flake8 F841)
-            missing_features = [f for f in self.selected_features if f not in df.columns]
+        # Add target back if it exists in original input and not in current df
+        if self.target_column in df.columns and self.target_column not in self.selected_features:
+            df[self.target_column] = df[self.target_column]
 
-            if missing_features:
-                # Add missing features as zeros
-                for feature in missing_features:
-                    df[feature] = 0
-
-            df = df[self.selected_features]
-
-            # Add target back if it exists
-            if self.target_column in df.columns and self.target_column not in self.selected_features:
-                df[self.target_column] = df[self.target_column]
+        return df
 
         return df
 
