@@ -75,11 +75,11 @@
     <text x="36" y="28" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="1.5">ENTERPRISE FRAUD INTELLIGENCE ENGINE</text>
   </g>
 
-  <!-- Live Status &amp; Telemetry Pill -->
+  <!-- Live Status & Telemetry Pill -->
   <g transform="translate(640, 40)">
     <rect width="260" height="32" rx="16" fill="#064e3b" fill-opacity="0.4" stroke="#10b981" stroke-width="1" />
     <circle cx="18" cy="16" r="5" fill="#10b981" filter="url(#glow-filter)" />
-    <text x="32" y="20" fill="#a7f3d0" font-size="11" font-weight="700">INFERENCE: 4.8ms | AUC: 0.984</text>
+    <text x="32" y="20" fill="#a7f3d0" font-size="11" font-weight="700">LATENCY: 1.18ms | AUC: 0.969</text>
   </g>
 
   <!-- Author Badge -->

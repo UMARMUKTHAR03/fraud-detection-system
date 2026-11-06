@@ -34,21 +34,42 @@
 
 ## 📊 Measured Benchmark & Validation Performance
 
-The production model was selected following a leak-free 5-fold stratified cross-validation workflow and evaluated on an independent 20% holdout test partition (8,000 transactions, 2% calibrated fraud rate). All metrics below are verified directly from `models/metrics.json`:
+> **Synthetic Benchmark Disclosure**: All performance metrics reported in this project were evaluated on a calibrated financial transaction benchmark generated with realistic biometric, card velocity, PCA-distributed features, and an extreme 2.0% class imbalance (32,000 training samples, 8,000 holdout test samples). These metrics represent controlled algorithmic benchmarks and do not substitute for live production telemetry on real-world bank cardholder data.
 
-| Model Candidate | 5-Fold CV ROC-AUC | 5-Fold CV PR-AUC | 5-Fold CV F1 | Holdout ROC-AUC | Holdout PR-AUC | Holdout Precision | Holdout Recall | Holdout F1 | Inference Latency |
+The production model was selected following a leak-free 5-fold stratified cross-validation workflow and evaluated on an independent 20% holdout test partition (8,000 transactions). All metrics below are verified directly from models/metrics.json:
+
+| Model Candidate | 5-Fold CV ROC-AUC | 5-Fold CV PR-AUC | 5-Fold CV F1 | Holdout ROC-AUC | Holdout PR-AUC | Holdout Precision | Holdout Recall | Holdout F1 | Single Inference Latency (P50 / Mean) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **XGBoost (Production Champion)** | **0.9889 ± 0.0014** | **0.8991** | **0.8260** | **0.9691** | **0.8463** | **82.89%** | **77.50%** | **0.8010** | **0.0013 ms** |
-| **LightGBM Classifier** | 0.9884 ± 0.0011 | 0.8820 | 0.7465 | 0.9743 | 0.8275 | 61.83% | 81.00% | 0.7013 | 0.0020 ms |
-| **Random Forest (SMOTE)** | 0.9874 ± 0.0011 | 0.8563 | 0.7188 | 0.9733 | 0.8100 | 58.84% | 81.50% | 0.6834 | 0.0050 ms |
-| **Logistic Regression (Baseline)** | 0.9884 ± 0.0022 | 0.8818 | 0.5324 | 0.9695 | 0.8226 | 33.85% | 88.00% | 0.4889 | 0.0002 ms |
-| **Soft-Voting Ensemble** | — | — | — | 0.9735 | 0.8420 | 66.80% | 80.50% | 0.7302 | 0.0063 ms |
+| **XGBoost (Production Champion)** | **0.9889 ± 0.0014** | **0.8991** | **0.8260** | **0.9691** | **0.8463** | **82.89%** | **77.50%** | **0.8010** | **1.18 ms / 1.33 ms** |
+| **LightGBM Classifier** | 0.9884 ± 0.0011 | 0.8820 | 0.7465 | 0.9743 | 0.8275 | 61.83% | 81.00% | 0.7013 | 1.82 ms / 2.01 ms |
+| **Random Forest (SMOTE)** | 0.9874 ± 0.0011 | 0.8563 | 0.7188 | 0.9733 | 0.8100 | 58.84% | 81.50% | 0.6834 | 4.60 ms / 5.12 ms |
+| **Logistic Regression (Baseline)** | 0.9884 ± 0.0022 | 0.8818 | 0.5324 | 0.9695 | 0.8226 | 33.85% | 88.00% | 0.4889 | 0.18 ms / 0.22 ms |
+| **Soft-Voting Ensemble** | — | — | — | 0.9751 | 0.8454 | 78.16% | 80.50% | 0.7931 | 3.20 ms / 3.65 ms |
+
+### 🎯 Model Selection Rationale: XGBoost vs. LightGBM
+
+In real-world payment authorization systems with extreme class imbalance (2% fraud prevalence), **Precision-Recall AUC (PR-AUC)** and **False Positive Rate** are the critical selection criteria over raw ROC-AUC:
+
+1. **Precision & False Alarm Suppression**: XGBoost achieved **82.89% precision** with only **32 False Positives** out of 7,840 legitimate transactions (0.41% FPR). By comparison, LightGBM generated **100 False Positives** (precision 61.83%). In financial operations, an additional 68 false alarms would represent a **312% increase in false decline customer friction** and analyst alert fatigue.
+2. **PR-AUC Dominance**: XGBoost delivered higher PR-AUC on both 5-fold cross-validation (**0.8991 vs. 0.8820**) and holdout evaluation (**0.8463 vs. 0.8275**).
+3. **F1-Score Balance**: XGBoost achieved an F1-score of **0.8010** compared to LightGBM's **0.7013**. While LightGBM captured 7 additional fraudulent events (recall 81.00% vs. 77.50%), it did so at the expense of triple the false positive volume.
+4. **Conclusion**: XGBoost was selected as the production champion because it delivers superior fraud prevention precision, optimal PR-AUC, and sub-2ms predictable latency.
+
+### ⏱️ Latency Benchmarking Methodology & Percentiles
+
+Inference latency was formally re-measured using **100 warm-up runs** followed by **1,000 repeated prediction iterations** on isolated single-record feature vectors using 	ime.perf_counter_ns() (scripts/measure_latency.py):
+
+| Metric Stage | Mean | P50 (Median) | P90 | P95 | P99 | Throughput |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Single Prediction (predict_proba)** | **1.33 ms** | **1.18 ms** | **1.60 ms** | **1.77 ms** | **2.39 ms** | ~750 req/sec/core |
+| **End-to-End Single (Scaling + Predict)** | 2.43 ms | 2.30 ms | 2.95 ms | 3.24 ms | 3.65 ms | ~410 req/sec/core |
+| **Vectorized Micro-Batch (100 txns)** | 1.59 ms total | 1.37 ms total | 1.95 ms total | 2.08 ms total | 2.37 ms total | **0.016 ms / txn** |
 
 ### Production Confusion Matrix (Holdout @ 0.50 Threshold)
-- **True Negatives (Legitimate Cleared)**: `7,768` (99.59%)
-- **False Positives (False Alarms)**: `32` (0.41% False Positive Rate)
-- **False Negatives (Missed Fraud)**: `45`
-- **True Positives (Fraud Prevented)**: `155`
+- **True Negatives (Legitimate Cleared)**: 7,768 (99.59%)
+- **False Positives (False Alarms)**: 32 (0.41% False Positive Rate)
+- **False Negatives (Missed Fraud)**: 45
+- **True Positives (Fraud Prevented)**: 155
 
 ---
 

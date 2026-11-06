@@ -25,7 +25,7 @@
     "f1_score": 0.801,
     "roc_auc": 0.9691,
     "pr_auc": 0.8463,
-    "latency_ms": 0.0013,
+    "latency_ms": 1.33,
     "training_time_sec": 1.163,
     "confusion_matrix": {
       "tn": 7768,
@@ -40,7 +40,10 @@
       "cv_f1_mean": 0.826,
       "cv_precision_mean": 0.8055,
       "cv_recall_mean": 0.8477
-    }
+    },
+    "latency_p50_ms": 1.18,
+    "latency_p95_ms": 1.77,
+    "latency_p99_ms": 2.39
   },
   "model_comparison": {
     "Logistic Regression": {
@@ -402,5 +405,56 @@
       "precision": 1.0
     }
   ],
-  "timestamp": "2026-11-06T12:52:02Z"
+  "timestamp": "2026-11-06T12:52:02Z",
+  "latency_benchmark": {
+    "timing_methodology": "100 warm-up runs followed by 1,000 repeated iterations using time.perf_counter_ns() on single-record scaled feature vector",
+    "single_prediction_ms": {
+      "mean": 1.33,
+      "p50": 1.18,
+      "p90": 1.6,
+      "p95": 1.77,
+      "p99": 2.39,
+      "samples_tested": 1000
+    },
+    "end_to_end_single_ms": {
+      "mean": 2.43,
+      "p50": 2.3,
+      "p95": 3.24,
+      "p99": 3.65
+    },
+    "batch_100_ms": {
+      "mean_total": 1.59,
+      "mean_per_sample": 0.016,
+      "p50_total": 1.37,
+      "p95_total": 2.08,
+      "p99_total": 2.37
+    }
+  },
+  "model_selection_rationale": {
+    "selected_model": "XGBoost (Extreme Gradient Boosting)",
+    "key_decision_factors": [
+      "Higher PR-AUC (0.8463 vs 0.8275 for LightGBM), which is the primary metric for extreme class imbalance (2% fraud rate).",
+      "Drastically lower False Positives (32 FP for XGBoost vs 100 FP for LightGBM), resulting in 82.89% precision vs LightGBM 61.83%.",
+      "Superior overall F1-score (0.8010 vs 0.7013 for LightGBM) while retaining high fraud capture (77.50% recall).",
+      "In fraud and payment operations, 3x fewer false alarms prevents alert fatigue for fraud analysts and avoids unnecessary customer checkout blocks."
+    ],
+    "comparison_table": {
+      "XGBoost": {
+        "pr_auc": 0.8463,
+        "precision": 0.8289,
+        "recall": 0.775,
+        "f1": 0.801,
+        "fp": 32,
+        "tp": 155
+      },
+      "LightGBM": {
+        "pr_auc": 0.8275,
+        "precision": 0.6183,
+        "recall": 0.81,
+        "f1": 0.7013,
+        "fp": 100,
+        "tp": 162
+      }
+    }
+  }
 }
