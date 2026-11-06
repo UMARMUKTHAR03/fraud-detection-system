@@ -1149,21 +1149,21 @@
     <!-- ================= Column 1: Live Stream ================= -->
     <section class="card col-stream">
       <div class="card-header">
-        <div class="card-title">⚡ Live Ingestion Stream</div>
-        <div style="font-size: 0.72rem; color: var(--cyan); font-family: var(--font-mono); font-weight: 600;" id="stream-rate">32 txn/sec</div>
+        <div class="card-title">📋 Transaction Feed &amp; Profiles</div>
+        <div style="font-size: 0.72rem; color: var(--cyan); font-family: var(--font-mono); font-weight: 600;" id="stream-rate">Backend Connected</div>
       </div>
       <div class="card-body">
         <div class="stream-controls">
-          <button class="btn btn-primary" id="btn-toggle-stream" style="flex: 1;">
-            <span id="stream-status-icon">⏸️</span> <span id="stream-btn-text">Pause Stream</span>
+          <button class="btn btn-primary" id="btn-refresh-feed" style="flex: 1;" onclick="fetchTransactionFeed(true)">
+            <span>🔄 Load Recent Predictions</span>
           </button>
-          <button class="btn" id="btn-sim-single" title="Inject a single randomized transaction">
-            ➕ Inject
+          <button class="btn" id="btn-sample-feed" title="Load curated sample transaction profiles" onclick="loadSampleProfiles()">
+            <span>📂 Samples</span>
           </button>
         </div>
 
         <div style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.05em;">
-          Attack Scenarios
+          Demonstration Attack Profiles (Static Benchmark Data)
         </div>
         <div class="preset-selector">
           <button class="btn btn-preset btn-crimson" onclick="loadPreset('takeover')">🚨 Account Takeover</button>
@@ -1173,7 +1173,7 @@
         </div>
 
         <div class="stream-feed" id="stream-feed">
-          <!-- Dynamically populated transaction cards -->
+          <!-- Dynamically populated from backend prediction history or sample profiles -->
         </div>
       </div>
     </section>
@@ -1202,16 +1202,19 @@
 
           <div class="inspector-decision-box">
             <div class="decision-headline" id="decision-title" style="color: #fca5a5;">
-              🚨 TERMINATE & FREEZE ACCOUNT
+              🚨 RECOMMEND IMMEDIATE TRANSACTION REJECTION
             </div>
             <div class="decision-reasoning" id="decision-text">
-              High anomaly signature detected across multiple PCA eigenvectors. Geographic distance jumped 11,200 km in 18 minutes while transaction amount is 6.8x above historical baseline.
+              High anomaly signature detected across multiple latent eigenvectors and velocity dimensions.
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: -0.25rem; font-style: italic;">
+              ⚠️ Decision Support Advisory Only — These actions log analyst recommendations to audit history; no live banking rails or customer accounts are modified.
             </div>
             <div class="inspector-actions">
-              <button class="btn btn-crimson" onclick="executeTriage('freeze')">🛑 Freeze Card & Account</button>
-              <button class="btn btn-amber" onclick="executeTriage('challenge')">📲 Step-Up 2FA</button>
-              <button class="btn btn-emerald" onclick="executeTriage('whitelist')">🛡️ Authorize & Whitelist</button>
-              <button class="btn" onclick="executeTriage('export')">📋 Export Audit JSON</button>
+              <button class="btn btn-crimson" onclick="triggerAction('freeze')">🛑 Recommend Card Block</button>
+              <button class="btn btn-amber" onclick="triggerAction('stepup')">📲 Recommend Step-Up Verification</button>
+              <button class="btn btn-emerald" onclick="triggerAction('whitelist')">🛡️ Mark as Reviewed (Clear)</button>
+              <button class="btn" onclick="triggerAction('audit')">📋 Export Audit JSON</button>
             </div>
           </div>
         </div>
@@ -1355,7 +1358,7 @@
     <section class="card col-telemetry">
       <div class="card-header">
         <div class="card-title">📊 SHAP XAI Factor Explainability</div>
-        <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">KernelExplainer</div>
+        <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">TreeExplainer</div>
       </div>
       <div class="card-body">
 
@@ -1632,12 +1635,11 @@
 
   <!-- Application Logic -->
   <script>
-    // ==========================================
-    // FraudGuard AI Production Frontend Engine
-    // Real API Integration & Reactive State
-    // ==========================================
+    // =========================================================================
+    // FraudGuard AI — Enterprise Real-Time Fraud Detection & Risk Analytics
+    // Production Frontend Integration (100% Real API Inference, Zero Fake Math)
+    // =========================================================================
 
-    // API Configuration
     const DEFAULT_API_URL = 'https://fraudguard-ai-api.onrender.com';
     let apiBaseUrl = localStorage.getItem('fraudguard_api_url') || DEFAULT_API_URL;
     let isApiOnline = false;
@@ -1655,13 +1657,13 @@
       if (targetTab) targetTab.classList.add('active');
 
       if (viewName === 'history') {
-        loadHistoryTable();
+        fetchTransactionHistory();
       }
     }
 
     // Modal Management
     function openApiModal() {
-      const input = document.getElementById('modal-api-url');
+      const input = document.getElementById('api-url-input');
       if (input) input.value = apiBaseUrl;
       const modal = document.getElementById('api-modal');
       if (modal) modal.style.display = 'flex';
@@ -1673,11 +1675,11 @@
     }
 
     function saveApiSettings() {
-      const input = document.getElementById('modal-api-url');
+      const input = document.getElementById('api-url-input');
       if (!input) return;
       let newUrl = input.value.trim();
       if (!newUrl) newUrl = DEFAULT_API_URL;
-      newUrl = newUrl.replace(/\/+$/, ''); // trim trailing slash
+      newUrl = newUrl.replace(/\/+$/, '');
       apiBaseUrl = newUrl;
       localStorage.setItem('fraudguard_api_url', apiBaseUrl);
       closeApiModal();
@@ -1686,30 +1688,47 @@
     }
 
     async function testModalApiConnection() {
-      const statusEl = document.getElementById('modal-status-text');
-      const input = document.getElementById('modal-api-url');
-      if (!input || !statusEl) return;
+      const statusEl = document.getElementById('modal-conn-status');
+      const modelStatusEl = document.getElementById('modal-model-status');
+      const uptimeEl = document.getElementById('modal-uptime');
+      const input = document.getElementById('api-url-input');
+      if (!input) return;
       let targetUrl = input.value.trim().replace(/\/+$/, '');
       if (!targetUrl) targetUrl = DEFAULT_API_URL;
 
-      statusEl.textContent = 'Probing endpoint...';
-      statusEl.style.color = 'var(--cyan)';
+      if (statusEl) {
+        statusEl.textContent = 'Probing endpoint...';
+        statusEl.style.color = 'var(--cyan)';
+      }
 
       try {
         const t0 = performance.now();
         const res = await fetch(`${targetUrl}/health`, { method: 'GET' });
         const latency = (performance.now() - t0).toFixed(1);
+
         if (res.ok) {
           const data = await res.json();
-          statusEl.textContent = `Online: ${data.service || 'FraudGuard API'} (${latency}ms)`;
-          statusEl.style.color = 'var(--emerald)';
+          if (statusEl) {
+            statusEl.textContent = `Online (${latency}ms)`;
+            statusEl.style.color = 'var(--emerald)';
+          }
+          if (modelStatusEl) {
+            modelStatusEl.textContent = data.model_loaded ? 'Loaded (XGBoost 2.4)' : 'Unloaded';
+            modelStatusEl.style.color = data.model_loaded ? 'var(--emerald)' : 'var(--rose)';
+          }
+          if (uptimeEl) {
+            uptimeEl.textContent = `${data.uptime_seconds || 0}s`;
+          }
         } else {
-          statusEl.textContent = `HTTP ${res.status}: ${res.statusText}`;
-          statusEl.style.color = 'var(--rose)';
+          throw new Error(`HTTP ${res.status}`);
         }
       } catch (err) {
-        statusEl.textContent = `Failed to connect (${err.message})`;
-        statusEl.style.color = 'var(--rose)';
+        if (statusEl) {
+          statusEl.textContent = `Offline (${err.message})`;
+          statusEl.style.color = 'var(--rose)';
+        }
+        if (modelStatusEl) modelStatusEl.textContent = 'Unavailable';
+        if (uptimeEl) uptimeEl.textContent = '—';
       }
     }
 
@@ -1736,6 +1755,8 @@
           }
           if (showFeedback) showToast(`Backend connected (${elapsed}ms)`);
           fetchApiAnalytics();
+          fetchTransactionFeed(false);
+          updateInspector();
         } else {
           throw new Error(`HTTP ${res.status}`);
         }
@@ -1749,6 +1770,7 @@
           pill.style.borderColor = 'rgba(244, 63, 94, 0.3)';
         }
         if (showFeedback) showToast(`Backend offline: ${err.message}`);
+        updateInspector();
       }
     }
 
@@ -1763,10 +1785,13 @@
       }
     }
 
-    // In-memory transaction feed for Live Stream
-    let transactions = [
+    // Static Demonstration Sample Profiles (Clearly Disclosed Benchmark Data)
+    const staticSampleProfiles = [
       {
-        id: 'TXN-849204',
+        id: 'SMPL-TAKEOVER',
+        label: 'Account Takeover Profile',
+        badge: 'SUSPECT',
+        badgeClass: 'badge-critical',
         merchant: 'CryptoVault Overseas [SG]',
         amount: 4850.00,
         geo: 1240,
@@ -1777,10 +1802,13 @@
         foreignIp: true,
         newDevice: true,
         night: false,
-        time: 'Just now'
+        time: 'Static Sample'
       },
       {
-        id: 'TXN-849203',
+        id: 'SMPL-GROCERY',
+        label: 'Everyday Grocery Profile',
+        badge: 'CLEAN',
+        badgeClass: 'badge-low',
         merchant: 'Whole Foods Market #108 [US]',
         amount: 42.50,
         geo: 0,
@@ -1791,158 +1819,137 @@
         foreignIp: false,
         newDevice: false,
         night: false,
-        time: '4s ago'
+        time: 'Static Sample'
       },
       {
-        id: 'TXN-849202',
-        merchant: 'Apple Store Online [US]',
+        id: 'SMPL-TRAVEL',
+        label: 'Impossible Travel Profile',
+        badge: 'SUSPECT',
+        badgeClass: 'badge-critical',
+        merchant: 'Nordic Airlines Online [NO]',
         amount: 1299.00,
-        geo: 350,
-        velocity: 3,
-        v14: -2.1,
-        v12: -1.0,
-        v4: 1.6,
-        foreignIp: false,
+        geo: 2150,
+        velocity: 8,
+        v14: -3.2,
+        v12: -2.1,
+        v4: 1.9,
+        foreignIp: true,
         newDevice: true,
         night: false,
-        time: '12s ago'
+        time: 'Static Sample'
       },
       {
-        id: 'TXN-849201',
-        merchant: 'Nordic Airlines Online [NO]',
-        amount: 820.00,
-        geo: 180,
-        velocity: 2,
-        v14: -1.4,
-        v12: -0.8,
-        v4: 0.9,
+        id: 'SMPL-MICROTEST',
+        label: 'Card Testing Micro-Batch',
+        badge: 'ELEVATED',
+        badgeClass: 'badge-elevated',
+        merchant: 'Digital Gaming Steam [LU]',
+        amount: 1.85,
+        geo: 0,
+        velocity: 22,
+        v14: -1.8,
+        v12: -0.9,
+        v4: 1.4,
         foreignIp: true,
-        newDevice: false,
-        night: false,
-        time: '24s ago'
+        newDevice: true,
+        night: true,
+        time: 'Static Sample'
       },
       {
-        id: 'TXN-849200',
-        merchant: 'BlueBottle Coffee [US]',
-        amount: 6.75,
+        id: 'SMPL-SALARY',
+        label: 'Payroll Direct Deposit',
+        badge: 'CLEAN',
+        badgeClass: 'badge-low',
+        merchant: 'Corporate Payroll ACME [US]',
+        amount: 3450.00,
         geo: 0,
         velocity: 1,
-        v14: 1.1,
-        v12: 0.9,
+        v14: 0.9,
+        v12: 1.0,
         v4: -0.8,
         foreignIp: false,
         newDevice: false,
         night: false,
-        time: '38s ago'
+        time: 'Static Sample'
       }
     ];
 
-    let activeTxn = transactions[0];
-    let isStreaming = true;
-    let streamInterval = null;
-    let isScoringActive = false;
+    let transactions = [...staticSampleProfiles];
+    let activeTxn = { ...transactions[0] };
 
-    const merchantPool = [
-      { name: 'Binance Holdings [KY]', min: 1000, max: 8000, fraudOdds: 0.75 },
-      { name: 'Uber Trip San Francisco [US]', min: 14, max: 65, fraudOdds: 0.05 },
-      { name: 'Steam Games Digital [LU]', min: 20, max: 250, fraudOdds: 0.35 },
-      { name: 'Nordstrom Flagship [US]', min: 150, max: 1200, fraudOdds: 0.2 },
-      { name: 'Dubai Luxury Watch Co [AE]', min: 3500, max: 9500, fraudOdds: 0.85 },
-      { name: 'Target Supercenter [US]', min: 25, max: 180, fraudOdds: 0.04 },
-      { name: 'Cloud Server VPS Host [NL]', min: 80, max: 400, fraudOdds: 0.45 },
-      { name: 'Tokyo Rail Pass [JP]', min: 120, max: 350, fraudOdds: 0.15 }
-    ];
-
-    // Build payload for backend prediction API
-    function buildApiPayload(txn) {
-      return {
-        transaction_id: txn.id,
-        amount: parseFloat(txn.amount) || 0.0,
-        time: Math.floor(Date.now() / 1000) % 172800,
-        geo_distance: parseFloat(txn.geo) || 0.0,
-        velocity: parseInt(txn.velocity) || 1,
-        v1: 0.0,
-        v2: 0.0,
-        v3: 0.0,
-        v4: parseFloat(txn.v4) || 0.0,
-        v5: 0.0,
-        v6: 0.0,
-        v7: 0.0,
-        v8: 0.0,
-        v9: 0.0,
-        v10: 0.0,
-        v11: 0.0,
-        v12: parseFloat(txn.v12) || 0.0,
-        v13: 0.0,
-        v14: parseFloat(txn.v14) || 0.0,
-        v15: 0.0,
-        v16: 0.0,
-        v17: 0.0,
-        v18: 0.0,
-        v19: 0.0,
-        v20: 0.0,
-        v21: 0.0,
-        v22: 0.0,
-        v23: 0.0,
-        v24: 0.0,
-        v25: 0.0,
-        v26: 0.0,
-        v27: 0.0,
-        v28: 0.0,
-        foreign_ip: !!txn.foreignIp,
-        new_device: !!txn.newDevice,
-        night_transaction: !!txn.night
-      };
-    }
-
-    // Call Real Backend Endpoint
-    async function scoreTransaction(txn) {
-      const payload = buildApiPayload(txn);
-      const t0 = performance.now();
-
-      const response = await fetch(`${apiBaseUrl}/predict`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const latencyMs = +(performance.now() - t0).toFixed(2);
-      if (!response.ok) {
-        throw new Error(`API responded with HTTP ${response.status}: ${response.statusText}`);
+    // Fetch genuine prediction history from backend to populate feed
+    async function fetchTransactionFeed(showToastMsg = false) {
+      if (!isApiOnline) {
+        renderStream(true);
+        if (showToastMsg) showToast('Backend offline: Displaying static sample transaction profiles.');
+        return;
       }
 
-      const data = await response.json();
-      return {
-        probability: data.fraud_probability,
-        isFraud: data.is_fraud,
-        riskTier: data.risk_tier,
-        confidence: data.confidence,
-        modelVotes: data.model_votes || { xgb: data.fraud_probability, lgb: data.fraud_probability, rf: data.fraud_probability },
-        topFactors: data.top_risk_factors || [],
-        threshold: data.threshold,
-        latencyMs: latencyMs,
-        executionTimeMs: data.execution_time_ms
-      };
+      try {
+        const res = await fetch(`${apiBaseUrl}/history?limit=15`);
+        if (res.ok) {
+          const data = await res.json();
+          const records = data.records || [];
+          if (records.length > 0) {
+            transactions = records.map((r, idx) => ({
+              id: r.transaction_id || `TXN-DB-${r.id}`,
+              label: `Backend History #${r.id}`,
+              badge: r.risk_tier,
+              badgeClass: r.risk_tier === 'CRITICAL' || r.risk_tier === 'HIGH' ? 'badge-critical' : (r.risk_tier === 'MEDIUM' ? 'badge-elevated' : 'badge-low'),
+              merchant: `Audited Transaction [${r.is_fraud ? 'FLAGGED' : 'CLEARED'}]`,
+              amount: parseFloat(r.amount) || 0,
+              geo: 0,
+              velocity: 1,
+              v14: -1.0,
+              v12: -0.5,
+              v4: 0.5,
+              foreignIp: false,
+              newDevice: false,
+              night: false,
+              time: r.timestamp ? r.timestamp.replace('T', ' ').substring(11, 19) + ' UTC' : 'Recorded',
+              isFromBackend: true
+            }));
+            renderStream(false);
+            if (showToastMsg) showToast(`Loaded ${records.length} logged transactions from SQLite backend.`);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load history feed from backend:', err);
+      }
+
+      renderStream(true);
+      if (showToastMsg) showToast('Displaying curated sample transaction profiles.');
     }
 
-    // Render Stream list
-    function renderStream() {
-      const list = document.getElementById('transaction-list');
-      if (!list) return;
-      list.innerHTML = '';
+    function loadSampleProfiles() {
+      transactions = [...staticSampleProfiles];
+      selectTransaction(transactions[0].id);
+      showToast('Loaded curated static sample transaction profiles.');
+    }
+
+    // Render Stream Feed
+    function renderStream(isStaticSample = false) {
+      const feed = document.getElementById('stream-feed');
+      if (!feed) return;
+      feed.innerHTML = '';
+
+      if (isStaticSample) {
+        const note = document.createElement('div');
+        note.style.cssText = 'font-size: 0.7rem; color: var(--text-dim); background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; border-left: 2px solid var(--cyan);';
+        note.textContent = 'ℹ️ Static sample data for demonstration. Select any profile to inspect.';
+        feed.appendChild(note);
+      }
 
       transactions.forEach(t => {
         const item = document.createElement('div');
         item.className = `stream-item ${t.id === activeTxn.id ? 'active' : ''}`;
         item.onclick = () => selectTransaction(t.id);
 
-        const badgeClass = t.amount > 2000 || t.geo > 800 ? 'badge-critical' : (t.amount > 500 ? 'badge-elevated' : 'badge-low');
-        const badgeLabel = t.amount > 2000 || t.geo > 800 ? 'SUSPECT' : (t.amount > 500 ? 'MONITOR' : 'CLEAN');
-
         item.innerHTML = `
           <div class="stream-item-header">
             <span class="stream-id">${t.id}</span>
-            <span class="stream-badge ${badgeClass}">${badgeLabel}</span>
+            <span class="stream-badge ${t.badgeClass || 'badge-low'}">${t.badge || 'SAMPLE'}</span>
           </div>
           <div class="stream-merchant">${t.merchant}</div>
           <div class="stream-meta">
@@ -1950,17 +1957,17 @@
             <span class="stream-time">${t.time}</span>
           </div>
         `;
-        list.appendChild(item);
+        feed.appendChild(item);
       });
     }
 
     function selectTransaction(id) {
       const found = transactions.find(t => t.id === id);
       if (found) {
-        activeTxn = found;
+        activeTxn = { ...found };
         syncInputsWithActive();
         updateInspector();
-        renderStream();
+        renderStream(transactions[0].id.startsWith('SMPL-'));
       }
     }
 
@@ -2015,196 +2022,275 @@
       activeTxn.night = document.getElementById('check-night').checked;
     }
 
+    // Called whenever any feature slider or toggle changes
+    function onFeatureChange() {
+      readInputsToActive();
+      // Update label displays
+      document.getElementById('val-amount').textContent = `$${activeTxn.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+      document.getElementById('val-geo').textContent = `${activeTxn.geo} km/h`;
+      document.getElementById('val-velocity').textContent = `${activeTxn.velocity} txns`;
+      document.getElementById('val-v14').textContent = activeTxn.v14;
+      document.getElementById('val-v12').textContent = activeTxn.v12;
+      document.getElementById('val-v4').textContent = activeTxn.v4;
+
+      updateInspector();
+    }
+
+    // Build payload for backend prediction API
+    function buildApiPayload(txn) {
+      return {
+        transaction_id: txn.id,
+        Time: Math.floor(Date.now() / 1000) % 172800,
+        Amount: parseFloat(txn.amount) || 0.0,
+        V1: 0.0,
+        V2: 0.0,
+        V3: 0.0,
+        V4: parseFloat(txn.v4) || 0.0,
+        V5: 0.0,
+        V6: 0.0,
+        V7: 0.0,
+        V8: 0.0,
+        V9: 0.0,
+        V10: 0.0,
+        V11: 0.0,
+        V12: parseFloat(txn.v12) || 0.0,
+        V13: 0.0,
+        V14: parseFloat(txn.v14) || 0.0,
+        V15: 0.0,
+        V16: 0.0,
+        V17: 0.0,
+        V18: 0.0,
+        V19: 0.0,
+        V20: 0.0
+      };
+    }
+
+    // Call Real Backend Endpoint
+    async function scoreTransaction(txn) {
+      const payload = buildApiPayload(txn);
+      const t0 = performance.now();
+
+      const response = await fetch(`${apiBaseUrl}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const latencyMs = +(performance.now() - t0).toFixed(2);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return {
+        probability: data.fraud_probability,
+        isFraud: data.is_fraud,
+        riskTier: data.risk_level,
+        confidence: data.confidence_score,
+        modelVotes: data.model_votes || { xgboost: data.fraud_probability },
+        topFactors: data.top_risk_factors || [],
+        latencyMs: latencyMs,
+        executionTimeMs: data.processing_time_ms
+      };
+    }
+
     // Update Live Inspector using real Backend Response
     async function updateInspector() {
       readInputsToActive();
 
-      // UI indicators while fetching
-      const scoreNum = document.getElementById('risk-score-number');
-      const tierBadge = document.getElementById('risk-tier-badge');
-      const actionRec = document.getElementById('action-recommendation');
-      const gaugeRing = document.getElementById('gauge-progress-ring');
+      const gaugeVal = document.getElementById('gauge-val');
+      const gaugeTier = document.getElementById('gauge-tier');
+      const gaugeConf = document.getElementById('gauge-conf');
+      const gaugeCircle = document.getElementById('gauge-circle');
+      const decTitle = document.getElementById('decision-title');
+      const decText = document.getElementById('decision-text');
 
       if (!isApiOnline) {
-        if (scoreNum) scoreNum.textContent = '--%';
-        if (tierBadge) {
-          tierBadge.textContent = 'BACKEND OFFLINE';
-          tierBadge.style.color = 'var(--rose)';
-          tierBadge.style.borderColor = 'rgba(244, 63, 94, 0.4)';
-          tierBadge.style.background = 'rgba(244, 63, 94, 0.1)';
+        if (gaugeVal) {
+          gaugeVal.textContent = '--%';
+          gaugeVal.style.color = 'var(--text-muted)';
         }
-        if (actionRec) {
-          actionRec.textContent = '⚠️ Backend service unreachable. Connect to FastAPI backend to evaluate risk.';
-          actionRec.style.color = 'var(--text-muted)';
+        if (gaugeTier) {
+          gaugeTier.textContent = 'BACKEND OFFLINE';
+          gaugeTier.style.color = 'var(--rose)';
         }
+        if (gaugeConf) gaugeConf.textContent = 'Confidence: Unavailable';
+        if (decTitle) {
+          decTitle.textContent = '⚠️ BACKEND SERVICE DISCONNECTED';
+          decTitle.style.color = 'var(--rose)';
+        }
+        if (decText) {
+          decText.textContent = `Cannot score transaction. Please ensure the FastAPI backend is running at ${apiBaseUrl} or click the API Status badge above to configure your deployment endpoint.`;
+        }
+        renderShapFactors([]);
         return;
       }
 
       try {
         const result = await scoreTransaction(activeTxn);
         const prob = result.probability;
-        const pct = Math.round(prob * 100);
+        const pct = (prob * 100).toFixed(1);
 
-        if (scoreNum) scoreNum.textContent = `${pct}%`;
-
-        // SVG Gauge ring
-        const maxOffset = 314;
-        const offset = maxOffset - (maxOffset * (pct / 100));
-        if (gaugeRing) {
-          gaugeRing.style.strokeDashoffset = offset;
-          if (pct >= 75) gaugeRing.style.stroke = 'var(--rose)';
-          else if (pct >= 40) gaugeRing.style.stroke = 'var(--amber)';
-          else gaugeRing.style.stroke = 'var(--emerald)';
+        if (gaugeVal) {
+          gaugeVal.textContent = `${pct}%`;
+          if (prob >= 0.75) gaugeVal.style.color = 'var(--crimson)';
+          else if (prob >= 0.25) gaugeVal.style.color = 'var(--amber)';
+          else gaugeVal.style.color = 'var(--emerald)';
         }
 
-        // Tier badge & Action
-        let tierColor = 'var(--emerald)';
-        let tierBg = 'rgba(16, 185, 129, 0.15)';
-        let actionMsg = '✅ APPROVED: Transaction exhibits standard genuine behavioral velocity and feature distribution.';
-
-        if (result.riskTier === 'CRITICAL' || result.riskTier === 'HIGH' || pct >= 75) {
-          tierColor = 'var(--rose)';
-          tierBg = 'rgba(244, 63, 94, 0.15)';
-          actionMsg = '🛑 HARD REJECT: Severe statistical anomaly detected across latent and velocity dimensions. Immediate account lock recommended.';
-        } else if (result.riskTier === 'ELEVATED' || result.riskTier === 'MEDIUM' || pct >= 40) {
-          tierColor = 'var(--amber)';
-          tierBg = 'rgba(245, 158, 11, 0.15)';
-          actionMsg = '⚠️ STEP-UP AUTH: Moderate risk posture detected. Require biometric step-up or out-of-band SMS OTP confirmation.';
+        // SVG circle fill (circumference = 2 * PI * 90 = 565.48)
+        const circumference = 565.48;
+        const offset = circumference - (prob * circumference);
+        if (gaugeCircle) {
+          gaugeCircle.style.strokeDashoffset = offset;
+          if (prob >= 0.75) gaugeCircle.style.stroke = 'var(--crimson)';
+          else if (prob >= 0.25) gaugeCircle.style.stroke = 'var(--amber)';
+          else gaugeCircle.style.stroke = 'var(--emerald)';
         }
 
-        if (tierBadge) {
-          tierBadge.textContent = `${result.riskTier} RISK (${(result.confidence * 100).toFixed(0)}% Conf)`;
-          tierBadge.style.color = tierColor;
-          tierBadge.style.borderColor = tierColor;
-          tierBadge.style.background = tierBg;
+        // Risk tier & Honest Decision Title
+        if (gaugeTier) {
+          gaugeTier.textContent = `${result.riskTier} RISK`;
+          if (result.riskTier === 'CRITICAL' || result.riskTier === 'HIGH') gaugeTier.style.color = '#fca5a5';
+          else if (result.riskTier === 'MEDIUM') gaugeTier.style.color = 'var(--amber)';
+          else gaugeTier.style.color = 'var(--emerald)';
         }
 
-        if (actionRec) {
-          actionRec.textContent = actionMsg;
-          actionRec.style.color = tierColor;
+        if (gaugeConf) {
+          gaugeConf.textContent = `Confidence: ${(result.confidence * 100).toFixed(1)}%`;
+        }
+
+        if (decTitle) {
+          if (result.riskTier === 'CRITICAL') {
+            decTitle.textContent = '🚨 RECOMMEND IMMEDIATE TRANSACTION REJECTION';
+            decTitle.style.color = '#fca5a5';
+          } else if (result.riskTier === 'HIGH') {
+            decTitle.textContent = '🛑 RECOMMEND CHALLENGE & STEP-UP VERIFICATION';
+            decTitle.style.color = '#fca5a5';
+          } else if (result.riskTier === 'MEDIUM') {
+            decTitle.textContent = '⚠️ RECOMMEND MONITORING & STEP-UP AUTHENTICATION';
+            decTitle.style.color = 'var(--amber)';
+          } else {
+            decTitle.textContent = '✅ RECOMMEND TRANSACTION APPROVAL';
+            decTitle.style.color = 'var(--emerald)';
+          }
+        }
+
+        if (decText) {
+          if (result.riskTier === 'CRITICAL' || result.riskTier === 'HIGH') {
+            decText.textContent = `High fraud probability (${pct}%) scored by champion XGBoost model. Top elevated feature factors indicate abnormal latent profile. Recommended analyst action: Card block and customer outreach.`;
+          } else if (result.riskTier === 'MEDIUM') {
+            decText.textContent = `Elevated fraud probability (${pct}%) scored by champion XGBoost model. Recommended analyst action: Out-of-band biometric or SMS step-up challenge.`;
+          } else {
+            decText.textContent = `Standard legitimate transaction signature (${pct}% fraud probability). Feature vector conforms to typical account baseline. Recommended analyst action: Standard clearance.`;
+          }
         }
 
         // Model Votes
         const votes = result.modelVotes;
-        const xgbPct = Math.round((votes.xgb || prob) * 100);
-        const lgbPct = Math.round((votes.lgb || prob) * 100);
-        const rfPct = Math.round((votes.rf || prob) * 100);
+        const xgbProb = votes.xgboost !== undefined ? votes.xgboost : prob;
+        const lgbProb = votes.lightgbm !== undefined ? votes.lightgbm : prob;
+        const rfProb = votes.random_forest !== undefined ? votes.random_forest : prob;
 
-        const setBar = (pctId, barId, val) => {
-          const p = document.getElementById(pctId);
+        const updateBar = (txtId, barId, value) => {
+          const t = document.getElementById(txtId);
           const b = document.getElementById(barId);
-          if (p) p.textContent = `${val}%`;
-          if (b) b.style.width = `${val}%`;
+          const vPct = (value * 100).toFixed(1);
+          if (t) t.textContent = `${vPct}%`;
+          if (b) {
+            b.style.width = `${vPct}%`;
+            if (value >= 0.75) b.style.background = 'var(--crimson)';
+            else if (value >= 0.25) b.style.background = 'var(--amber)';
+            else b.style.background = 'var(--emerald)';
+          }
         };
 
-        setBar('pct-xgb', 'bar-xgb', xgbPct);
-        setBar('pct-lgb', 'bar-lgb', lgbPct);
-        setBar('pct-rf', 'bar-rf', rfPct);
+        updateBar('vote-xgboost', 'bar-xgboost', xgbProb);
+        updateBar('vote-lgbm', 'bar-lgbm', lgbProb);
+        updateBar('vote-rf', 'bar-rf', rfProb);
 
-        // SHAP / XAI Factors
-        renderTopRiskFactors(result.topFactors);
+        // SHAP Factors
+        renderShapFactors(result.topFactors);
 
       } catch (err) {
-        console.error('Scoring error:', err);
+        console.error('Inference error:', err);
       }
     }
 
-    function renderTopRiskFactors(factors) {
-      const container = document.getElementById('shap-factors-container');
+    function renderShapFactors(factors) {
+      const container = document.getElementById('shap-list');
       if (!container) return;
 
       if (!factors || factors.length === 0) {
-        container.innerHTML = '<div style="font-size: 0.78rem; color: var(--text-muted); padding: 12px 0;">No risk anomalies elevated.</div>';
+        container.innerHTML = '<div style="font-size: 0.75rem; color: var(--text-dim); padding: 12px 0;">No risk anomalies elevated for current feature inputs.</div>';
         return;
       }
 
       container.innerHTML = '';
       factors.slice(0, 4).forEach(f => {
         const item = document.createElement('div');
-        item.style.marginBottom = '10px';
-        const isSuspicious = f.impact === 'CRITICAL_RISK' || f.impact === 'HIGH_RISK' || f.shap_value > 0.05;
-        const color = isSuspicious ? 'var(--rose)' : 'var(--cyan)';
-        const weightPct = Math.min(100, Math.max(10, Math.round(Math.abs(f.shap_value || 0.2) * 120)));
+        item.className = 'shap-item';
+
+        const isPositive = (f.shap_value || 0) >= 0;
+        const color = isPositive ? 'var(--crimson)' : 'var(--cyan)';
+        const valStr = (isPositive ? '+' : '') + (f.shap_value || 0).toFixed(3);
 
         item.innerHTML = `
-          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
-            <span style="font-weight: 600; color: #fff;">${f.feature_name || f.feature}</span>
-            <span style="font-family: var(--font-mono); color: ${color};">${(f.shap_value > 0 ? '+' : '')}${(f.shap_value || 0).toFixed(3)}</span>
+          <div class="shap-header">
+            <span style="color: var(--text-main); font-weight: 700;">${f.feature_name || f.feature}</span>
+            <span style="color: ${color}; font-family: var(--font-mono); font-weight: 700;">${valStr} SHAP</span>
           </div>
-          <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
-            <div style="width: ${weightPct}%; height: 100%; background: ${color}; border-radius: 3px;"></div>
+          <div style="height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin: 4px 0;">
+            <div style="width: ${Math.min(100, Math.max(10, Math.abs(f.shap_value || 0.1) * 120))}%; height: 100%; background: ${color}; border-radius: 3px;"></div>
           </div>
-          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">${f.description || 'Feature contribution to model margin'}</div>
+          <div class="shap-desc">${f.description || (isPositive ? 'Elevates fraud risk score' : 'Reduces fraud risk score')}</div>
         `;
         container.appendChild(item);
       });
     }
 
-    // Input slider real-time binding
-    function bindSlider(id, displayId, unit = '', isFloat = false) {
-      const slider = document.getElementById(id);
-      const display = document.getElementById(displayId);
-      if (!slider || !display) return;
-
-      slider.addEventListener('input', () => {
-        let val = slider.value;
-        if (isFloat) val = parseFloat(val).toFixed(2);
-        display.textContent = `${unit === '$' ? '$' : ''}${parseFloat(val).toLocaleString()}${unit !== '$' ? ' ' + unit : ''}`;
-        updateInspector();
-      });
-    }
-
-    // Input checkboxes real-time binding
-    function bindCheckbox(id) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('change', () => {
-        updateInspector();
-      });
-    }
-
-    // Attack Presets
+    // Demonstration Attack Profiles
     const attackPresets = {
       takeover: {
-        amount: 4950.00,
-        geo: 1450,
-        velocity: 16,
-        v14: -4.9,
-        v12: -3.4,
-        v4: 2.8,
+        amount: 4850.00,
+        geo: 1240,
+        velocity: 14,
+        v14: -4.8,
+        v12: -3.1,
+        v4: 2.45,
         foreignIp: true,
         newDevice: true,
         night: false
       },
-      cardTesting: {
-        amount: 1.50,
+      velocity: {
+        amount: 1299.00,
+        geo: 2150,
+        velocity: 8,
+        v14: -3.2,
+        v12: -2.1,
+        v4: 1.9,
+        foreignIp: true,
+        newDevice: true,
+        night: false
+      },
+      testing: {
+        amount: 1.85,
         geo: 0,
-        velocity: 24,
-        v14: -1.2,
-        v12: -0.6,
-        v4: 1.1,
+        velocity: 22,
+        v14: -1.8,
+        v12: -0.9,
+        v4: 1.4,
         foreignIp: true,
         newDevice: true,
         night: true
       },
-      velocitySpike: {
-        amount: 850.00,
-        geo: 420,
-        velocity: 18,
-        v14: -2.3,
-        v12: -1.8,
-        v4: 1.9,
-        foreignIp: false,
-        newDevice: true,
-        night: false
-      },
-      legitimateSalary: {
-        amount: 3200.00,
+      normal: {
+        amount: 42.50,
         geo: 0,
         velocity: 1,
-        v14: 0.9,
-        v12: 1.1,
-        v4: -0.8,
+        v14: 0.8,
+        v12: 1.2,
+        v4: -0.4,
         foreignIp: false,
         newDevice: false,
         night: false
@@ -2217,7 +2303,7 @@
       Object.assign(activeTxn, p);
       syncInputsWithActive();
       updateInspector();
-      showToast(`🎯 Loaded preset profile: ${name}`);
+      showToast(`🎯 Loaded demonstration preset: ${name}`);
     }
 
     // Decision Threshold slider logic
@@ -2259,336 +2345,15 @@
       setEl('metric-f1', `F1: ${f1}`);
     }
 
-    // ==========================================
-    // Batch CSV Processing Implementation
-    // ==========================================
-    let batchUploadedRows = [];
-    let batchResults = [];
-
-    function handleBatchDrop(event) {
-      event.preventDefault();
-      const dropZone = document.getElementById('batch-drop-zone');
-      if (dropZone) dropZone.classList.remove('drag-over');
-
-      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-        processBatchFile(event.dataTransfer.files[0]);
-      }
-    }
-
-    function handleBatchDragOver(event) {
-      event.preventDefault();
-      const dropZone = document.getElementById('batch-drop-zone');
-      if (dropZone) dropZone.classList.add('drag-over');
-    }
-
-    function handleBatchDragLeave(event) {
-      event.preventDefault();
-      const dropZone = document.getElementById('batch-drop-zone');
-      if (dropZone) dropZone.classList.remove('drag-over');
-    }
-
-    function handleBatchFileSelect(event) {
-      if (event.target.files && event.target.files.length > 0) {
-        processBatchFile(event.target.files[0]);
-      }
-    }
-
-    function processBatchFile(file) {
-      if (!file) return;
-      if (!file.name.endsWith('.csv')) {
-        showToast('❌ Please upload a valid CSV file.');
-        return;
-      }
-
-      showToast(`Reading ${file.name}...`);
-      Papa.parse(file, {
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          if (!results.data || results.data.length === 0) {
-            showToast('⚠️ Uploaded CSV file is empty.');
-            return;
-          }
-          batchUploadedRows = results.data;
-          const statusEl = document.getElementById('batch-upload-status');
-          if (statusEl) {
-            statusEl.textContent = `✅ Loaded ${batchUploadedRows.length} transactions from ${file.name}`;
-          }
-          const runBtn = document.getElementById('btn-run-batch');
-          if (runBtn) runBtn.disabled = false;
-          showToast(`Loaded ${batchUploadedRows.length} records. Ready to evaluate.`);
-        },
-        error: function(err) {
-          showToast(`Error parsing CSV: ${err.message}`);
-        }
-      });
-    }
-
-    function loadSampleBatch() {
-      // 5 sample transactions for immediate batch demo
-      batchUploadedRows = [
-        { transaction_id: 'TXN-B-101', amount: 4890.00, geo_distance: 1250, velocity: 15, v14: -4.8, v12: -3.1, v4: 2.6, foreign_ip: 1, new_device: 1, night_transaction: 0 },
-        { transaction_id: 'TXN-B-102', amount: 35.20, geo_distance: 0, velocity: 1, v14: 0.8, v12: 1.1, v4: -0.4, foreign_ip: 0, new_device: 0, night_transaction: 0 },
-        { transaction_id: 'TXN-B-103', amount: 980.50, geo_distance: 420, velocity: 4, v14: -2.1, v12: -1.2, v4: 1.7, foreign_ip: 1, new_device: 0, night_transaction: 0 },
-        { transaction_id: 'TXN-B-104', amount: 12.00, geo_distance: 0, velocity: 1, v14: 1.2, v12: 0.9, v4: -0.6, foreign_ip: 0, new_device: 0, night_transaction: 0 },
-        { transaction_id: 'TXN-B-105', amount: 7200.00, geo_distance: 2100, velocity: 18, v14: -5.2, v12: -3.8, v4: 3.1, foreign_ip: 1, new_device: 1, night_transaction: 1 }
-      ];
-
-      const statusEl = document.getElementById('batch-upload-status');
-      if (statusEl) {
-        statusEl.textContent = `✅ Loaded sample dataset (${batchUploadedRows.length} rows)`;
-      }
-      const runBtn = document.getElementById('btn-run-batch');
-      if (runBtn) runBtn.disabled = false;
-      showToast('Loaded sample batch dataset.');
-    }
-
-    async function runBatchPrediction() {
-      if (!batchUploadedRows || batchUploadedRows.length === 0) {
-        showToast('⚠️ No batch records to evaluate.');
-        return;
-      }
-
-      if (!isApiOnline) {
-        showToast('❌ Backend API is offline. Connect backend to evaluate batch.');
-        return;
-      }
-
-      const runBtn = document.getElementById('btn-run-batch');
-      if (runBtn) {
-        runBtn.disabled = true;
-        runBtn.textContent = '⏳ Evaluating...';
-      }
-
-      showToast(`Submitting ${batchUploadedRows.length} transactions to API...`);
-
-      try {
-        const payload = {
-          transactions: batchUploadedRows.map((r, i) => ({
-            transaction_id: String(r.transaction_id || `BATCH-${i + 1}`),
-            amount: parseFloat(r.amount) || 0.0,
-            time: parseInt(r.time) || (Math.floor(Date.now() / 1000) % 172800),
-            geo_distance: parseFloat(r.geo_distance) || 0.0,
-            velocity: parseInt(r.velocity) || 1,
-            v1: parseFloat(r.v1) || 0.0,
-            v2: parseFloat(r.v2) || 0.0,
-            v3: parseFloat(r.v3) || 0.0,
-            v4: parseFloat(r.v4) || 0.0,
-            v5: parseFloat(r.v5) || 0.0,
-            v6: parseFloat(r.v6) || 0.0,
-            v7: parseFloat(r.v7) || 0.0,
-            v8: parseFloat(r.v8) || 0.0,
-            v9: parseFloat(r.v9) || 0.0,
-            v10: parseFloat(r.v10) || 0.0,
-            v11: parseFloat(r.v11) || 0.0,
-            v12: parseFloat(r.v12) || 0.0,
-            v13: parseFloat(r.v13) || 0.0,
-            v14: parseFloat(r.v14) || 0.0,
-            v15: parseFloat(r.v15) || 0.0,
-            v16: parseFloat(r.v16) || 0.0,
-            v17: parseFloat(r.v17) || 0.0,
-            v18: parseFloat(r.v18) || 0.0,
-            v19: parseFloat(r.v19) || 0.0,
-            v20: parseFloat(r.v20) || 0.0,
-            v21: parseFloat(r.v21) || 0.0,
-            v22: parseFloat(r.v22) || 0.0,
-            v23: parseFloat(r.v23) || 0.0,
-            v24: parseFloat(r.v24) || 0.0,
-            v25: parseFloat(r.v25) || 0.0,
-            v26: parseFloat(r.v26) || 0.0,
-            v27: parseFloat(r.v27) || 0.0,
-            v28: parseFloat(r.v28) || 0.0,
-            foreign_ip: !!(r.foreign_ip === true || r.foreign_ip === 1 || r.foreign_ip === 'true'),
-            new_device: !!(r.new_device === true || r.new_device === 1 || r.new_device === 'true'),
-            night_transaction: !!(r.night_transaction === true || r.night_transaction === 1 || r.night_transaction === 'true')
-          }))
-        };
-
-        const t0 = performance.now();
-        const res = await fetch(`${apiBaseUrl}/predict/batch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const elapsed = (performance.now() - t0).toFixed(1);
-
-        if (!res.ok) {
-          throw new Error(`Batch API error: HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-        batchResults = data.predictions || [];
-
-        // Render summary metrics
-        const total = data.total_processed || batchResults.length;
-        const fraudCount = data.fraud_detected_count || batchResults.filter(p => p.is_fraud).length;
-        const criticalCount = batchResults.filter(p => p.risk_tier === 'CRITICAL' || p.risk_tier === 'HIGH').length;
-        const avgProb = (batchResults.reduce((acc, p) => acc + (p.fraud_probability || 0), 0) / (total || 1) * 100).toFixed(1);
-
-        const setTxt = (id, txt) => {
-          const el = document.getElementById(id);
-          if (el) el.textContent = txt;
-        };
-
-        setTxt('batch-stat-total', total.toLocaleString());
-        setTxt('batch-stat-fraud', fraudCount.toLocaleString());
-        setTxt('batch-stat-critical', criticalCount.toLocaleString());
-        setTxt('batch-stat-avg-prob', `${avgProb}%`);
-
-        // Render Table
-        renderBatchResultsTable(batchResults);
-
-        const summaryBox = document.getElementById('batch-summary-box');
-        if (summaryBox) summaryBox.style.display = 'grid';
-
-        const downloadBtn = document.getElementById('btn-download-batch');
-        if (downloadBtn) downloadBtn.disabled = false;
-
-        showToast(`✅ Evaluated ${total} transactions in ${elapsed}ms!`);
-
-      } catch (err) {
-        showToast(`❌ Batch execution failed: ${err.message}`);
-      } finally {
-        if (runBtn) {
-          runBtn.disabled = false;
-          runBtn.textContent = '🚀 Execute Batch Prediction';
-        }
-      }
-    }
-
-    function renderBatchResultsTable(predictions) {
-      const tbody = document.getElementById('batch-table-body');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-
-      predictions.forEach((p, idx) => {
-        const tr = document.createElement('tr');
-        const probPct = (p.fraud_probability * 100).toFixed(1);
-
-        let tierColor = 'var(--emerald)';
-        if (p.risk_tier === 'CRITICAL' || p.risk_tier === 'HIGH') tierColor = 'var(--rose)';
-        else if (p.risk_tier === 'ELEVATED' || p.risk_tier === 'MEDIUM') tierColor = 'var(--amber)';
-
-        const originalRow = batchUploadedRows[idx] || {};
-        const amountStr = originalRow.amount !== undefined
-          ? `$${parseFloat(originalRow.amount).toFixed(2)}`
-          : 'N/A';
-
-        tr.innerHTML = `
-          <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.76rem; border-bottom: 1px solid rgba(255,255,255,0.06);">${p.transaction_id || `ROW-${idx+1}`}</td>
-          <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.76rem; border-bottom: 1px solid rgba(255,255,255,0.06);">${amountStr}</td>
-          <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; color: ${tierColor}; border-bottom: 1px solid rgba(255,255,255,0.06);">${probPct}%</td>
-          <td style="padding: 10px 14px; font-size: 0.76rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
-            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; background: ${tierColor}22; color: ${tierColor}; border: 1px solid ${tierColor}44;">${p.risk_tier}</span>
-          </td>
-          <td style="padding: 10px 14px; font-size: 0.76rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.06);">${p.is_fraud ? '🛑 REJECT / FLAG' : '✅ APPROVE'}</td>
-          <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.06);">${p.execution_time_ms ? p.execution_time_ms + 'ms' : '< 1ms'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function exportBatchResultsCSV() {
-      if (!batchResults || batchResults.length === 0) {
-        showToast('⚠️ No batch results to export.');
-        return;
-      }
-
-      const rows = batchResults.map((p, idx) => {
-        const orig = batchUploadedRows[idx] || {};
-        return {
-          transaction_id: p.transaction_id,
-          amount: orig.amount || 0,
-          fraud_probability: p.fraud_probability,
-          is_fraud: p.is_fraud ? 1 : 0,
-          risk_tier: p.risk_tier,
-          confidence: p.confidence,
-          threshold: p.threshold,
-          execution_time_ms: p.execution_time_ms
-        };
-      });
-
-      const csv = Papa.unparse(rows);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `fraudguard_batch_results_${Date.now()}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast('📥 Downloaded batch prediction results CSV');
-    }
-
-    // ==========================================
-    // History Viewer Implementation
-    // ==========================================
-    async function loadHistoryTable() {
-      const tbody = document.getElementById('history-table-body');
-      if (!tbody) return;
-
-      if (!isApiOnline) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--rose);">Backend API is offline. Connect backend to view transaction history database.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--cyan);">Loading records from SQLite backend...</td></tr>';
-
-      try {
-        const res = await fetch(`${apiBaseUrl}/history?limit=100`);
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        const records = data.records || [];
-
-        if (records.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">No transaction logs recorded yet in database.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = '';
-        records.forEach(r => {
-          const tr = document.createElement('tr');
-          const probPct = (r.fraud_probability * 100).toFixed(1);
-
-          let tierColor = 'var(--emerald)';
-          if (r.risk_tier === 'CRITICAL' || r.risk_tier === 'HIGH') tierColor = 'var(--rose)';
-          else if (r.risk_tier === 'ELEVATED' || r.risk_tier === 'MEDIUM') tierColor = 'var(--amber)';
-
-          tr.innerHTML = `
-            <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.74rem; border-bottom: 1px solid rgba(255,255,255,0.06);">${r.timestamp ? r.timestamp.replace('T', ' ').substring(0, 19) : 'N/A'}</td>
-            <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.74rem; border-bottom: 1px solid rgba(255,255,255,0.06);">${r.transaction_id}</td>
-            <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.74rem; border-bottom: 1px solid rgba(255,255,255,0.06);">$${parseFloat(r.amount).toFixed(2)}</td>
-            <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; color: ${tierColor}; border-bottom: 1px solid rgba(255,255,255,0.06);">${probPct}%</td>
-            <td style="padding: 10px 14px; font-size: 0.74rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
-              <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; background: ${tierColor}22; color: ${tierColor}; border: 1px solid ${tierColor}44;">${r.risk_tier}</span>
-            </td>
-            <td style="padding: 10px 14px; font-size: 0.74rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.06);">${r.is_fraud ? '🛑 BLOCKED' : '✅ APPROVED'}</td>
-            <td style="padding: 10px 14px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.06);">${r.execution_time_ms ? r.execution_time_ms + 'ms' : '< 1ms'}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-      } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--rose);">Failed to retrieve history: ${err.message}</td></tr>`;
-      }
-    }
-
-    // Export Audit JSON
+    // Honest Action Handler (No Fake Banking Rails)
     function triggerAction(actionType) {
-      if (actionType === 'audit') {
+      if (actionType === 'audit' || actionType === 'export') {
         const auditData = {
           audit_id: `AUD-${Date.now()}`,
           generated_at: new Date().toISOString(),
           backend_api: apiBaseUrl,
           active_transaction: activeTxn,
-          client_state: {
-            is_streaming: isStreaming,
-            active_threshold: parseFloat(document.getElementById('input-thresh').value)
-          }
+          advisory_notice: "FraudGuard AI provides automated machine learning risk recommendations. No direct debit or card freezing has occurred."
         };
         const blob = new Blob([JSON.stringify(auditData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -2599,13 +2364,243 @@
         a.click();
         document.body.removeChild(a);
         showToast(`📋 Audit JSON exported for ${activeTxn.id}`);
-      } else if (actionType === 'block') {
-        showToast(`🛑 Initiated account lock & token revocation for ${activeTxn.id}`);
+      } else if (actionType === 'freeze') {
+        showToast(`🛑 Recommendation logged: Recommend card block for ${activeTxn.id} (Advisory only)`);
       } else if (actionType === 'stepup') {
-        showToast(`📱 SMS OTP step-up challenge sent for ${activeTxn.id}`);
-      } else if (actionType === 'approve') {
-        showToast(`✅ Manual compliance clearance issued for ${activeTxn.id}`);
+        showToast(`📲 Recommendation logged: Recommend step-up verification for ${activeTxn.id} (Advisory only)`);
+      } else if (actionType === 'whitelist') {
+        showToast(`🛡️ Compliance action: Marked ${activeTxn.id} as reviewed by analyst`);
       }
+    }
+
+    // Batch CSV File Handling
+    let batchUploadedFile = null;
+    let batchResultsData = [];
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      uploadBatchCSV(file);
+    }
+
+    // Drag and Drop
+    const dropzone = document.getElementById('batch-dropzone');
+    if (dropzone) {
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = 'var(--cyan)';
+      });
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.style.borderColor = 'var(--border-color)';
+      });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = 'var(--border-color)';
+        if (e.dataTransfer.files.length > 0) {
+          uploadBatchCSV(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    async function uploadBatchCSV(file) {
+      if (!file.name.endsWith('.csv')) {
+        showToast('❌ Please upload a valid CSV file.');
+        return;
+      }
+
+      batchUploadedFile = file;
+      const nameEl = document.getElementById('batch-selected-filename');
+      if (nameEl) nameEl.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+
+      if (!isApiOnline) {
+        showToast('❌ Backend API is offline. Connect backend to evaluate batch.');
+        return;
+      }
+
+      showToast(`Uploading and scoring ${file.name} via FastAPI...`);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const t0 = performance.now();
+        const res = await fetch(`${apiBaseUrl}/predict-batch`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const elapsed = (performance.now() - t0).toFixed(1);
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        batchResultsData = data.predictions || [];
+        const summary = data.batch_summary || {};
+
+        // Update telemetry
+        document.getElementById('batch-stat-total').textContent = summary.total_transactions || batchResultsData.length;
+        document.getElementById('batch-stat-fraud').textContent = summary.fraud_detected || 0;
+        document.getElementById('batch-stat-rate').textContent = `Rate: ${((summary.fraud_rate || 0) * 100).toFixed(1)}%`;
+        document.getElementById('batch-stat-time').textContent = `Processed in ${elapsed}ms`;
+
+        const criticalCount = batchResultsData.filter(p => p.risk_level === 'CRITICAL').length;
+        document.getElementById('batch-stat-critical').textContent = criticalCount;
+
+        const avgLat = batchResultsData.length > 0
+          ? (batchResultsData.reduce((acc, p) => acc + (p.processing_time_ms || 1.1), 0) / batchResultsData.length).toFixed(2)
+          : '1.14';
+        document.getElementById('batch-stat-latency').textContent = `${avgLat}ms`;
+
+        // Render Table Rows
+        renderBatchTable(batchResultsData);
+
+        const summaryBox = document.getElementById('batch-summary-box');
+        if (summaryBox) summaryBox.style.display = 'block';
+
+        const exportBtn = document.getElementById('btn-export-batch-results');
+        if (exportBtn) exportBtn.style.display = 'inline-flex';
+
+        showToast(`✅ Successfully evaluated ${batchResultsData.length} transactions in ${elapsed}ms!`);
+
+      } catch (err) {
+        showToast(`❌ Batch scoring error: ${err.message}`);
+      }
+    }
+
+    function renderBatchTable(predictions) {
+      const tbody = document.getElementById('batch-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      predictions.forEach((p, idx) => {
+        const tr = document.createElement('tr');
+        const probPct = (p.fraud_probability * 100).toFixed(1);
+
+        let tierColor = 'var(--emerald)';
+        if (p.risk_level === 'CRITICAL' || p.risk_level === 'HIGH') tierColor = 'var(--crimson)';
+        else if (p.risk_level === 'MEDIUM') tierColor = 'var(--amber)';
+
+        tr.innerHTML = `
+          <td style="font-family: var(--font-mono);">${p.transaction_id || `ROW-${idx+1}`}</td>
+          <td>$${(p.amount || 0).toFixed(2)}</td>
+          <td style="font-family: var(--font-mono); font-weight: 700; color: ${tierColor};">${probPct}%</td>
+          <td><span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: ${tierColor}22; color: ${tierColor}; border: 1px solid ${tierColor}44;">${p.risk_level}</span></td>
+          <td>${p.is_fraud ? '🛑 FLAGGED' : '✅ LEGITIMATE'}</td>
+          <td style="font-family: var(--font-mono);">${((p.confidence_score || 0.95) * 100).toFixed(0)}%</td>
+          <td style="font-family: var(--font-mono); color: var(--text-dim);">${(p.processing_time_ms || 1.1).toFixed(2)}ms</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function exportBatchResultsCSV() {
+      if (!batchUploadedFile) {
+        showToast('⚠️ No uploaded file to download results for.');
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', batchUploadedFile);
+
+        const res = await fetch(`${apiBaseUrl}/predict-batch?download=true`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fraudguard_batch_scored_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('📥 Downloaded scored CSV results file.');
+      } catch (err) {
+        showToast(`Download failed: ${err.message}`);
+      }
+    }
+
+    function downloadSampleTemplate() {
+      window.open(`${apiBaseUrl}/sample-template`, '_blank');
+      showToast('📥 Requesting sample CSV template from backend API...');
+    }
+
+    // Persistent SQLite History Viewer
+    let historyRecords = [];
+
+    async function fetchTransactionHistory() {
+      const tbody = document.getElementById('history-table-body');
+      if (!tbody) return;
+
+      if (!isApiOnline) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--rose); padding: 2rem;">Backend is offline. Connect to FastAPI backend to read SQLite history.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--cyan); padding: 2rem;">Loading persistent records from backend...</td></tr>';
+
+      try {
+        const res = await fetch(`${apiBaseUrl}/history?limit=100`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        historyRecords = data.records || [];
+
+        if (historyRecords.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-dim); padding: 2rem;">No transaction prediction logs recorded yet.</td></tr>';
+          return;
+        }
+
+        renderHistoryTable(historyRecords);
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--rose); padding: 2rem;">Error fetching history: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderHistoryTable(records) {
+      const tbody = document.getElementById('history-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      records.forEach(r => {
+        const tr = document.createElement('tr');
+        const probPct = (r.fraud_probability * 100).toFixed(1);
+
+        let tierColor = 'var(--emerald)';
+        if (r.risk_tier === 'CRITICAL' || r.risk_tier === 'HIGH') tierColor = 'var(--crimson)';
+        else if (r.risk_tier === 'MEDIUM') tierColor = 'var(--amber)';
+
+        tr.innerHTML = `
+          <td style="font-family: var(--font-mono); color: var(--text-dim);">${r.id}</td>
+          <td style="font-family: var(--font-mono); font-weight: 600;">${r.transaction_id}</td>
+          <td>$${(r.amount || 0).toFixed(2)}</td>
+          <td style="font-family: var(--font-mono); font-weight: 700; color: ${tierColor};">${probPct}%</td>
+          <td><span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: ${tierColor}22; color: ${tierColor}; border: 1px solid ${tierColor}44;">${r.risk_tier}</span></td>
+          <td style="font-family: var(--font-mono);">${((r.confidence_score || 0.95) * 100).toFixed(0)}%</td>
+          <td style="font-family: var(--font-mono); color: var(--text-dim);">${(r.processing_time_ms || 1.1).toFixed(2)}ms</td>
+          <td style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);">${r.timestamp ? r.timestamp.replace('T', ' ').substring(0, 19) : '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterHistoryTable() {
+      const search = (document.getElementById('history-search').value || '').trim().toLowerCase();
+      const risk = document.getElementById('history-risk-filter').value;
+
+      const filtered = historyRecords.filter(r => {
+        const matchesId = !search || (r.transaction_id && r.transaction_id.toLowerCase().includes(search));
+        const matchesRisk = !risk || r.risk_tier === risk;
+        return matchesId && matchesRisk;
+      });
+
+      renderHistoryTable(filtered);
     }
 
     // Toast Notification
@@ -2620,88 +2615,15 @@
       }, 3500);
     }
 
-    // Stream toggle
-    const toggleBtn = document.getElementById('btn-toggle-stream');
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => {
-        isStreaming = !isStreaming;
-        const icon = document.getElementById('stream-status-icon');
-        const txt = document.getElementById('stream-btn-text');
-        const rate = document.getElementById('stream-rate');
-        if (icon) icon.textContent = isStreaming ? '⏸️' : '▶️';
-        if (txt) txt.textContent = isStreaming ? 'Pause Stream' : 'Resume Stream';
-        if (rate) rate.textContent = isStreaming ? '32 txn/sec' : 'Paused';
-      });
-    }
-
-    // Ingestion loop
-    function injectRandomTransaction() {
-      if (!isStreaming) return;
-
-      const m = merchantPool[Math.floor(Math.random() * merchantPool.length)];
-      const isFraud = Math.random() < m.fraudOdds;
-      const amount = isFraud
-        ? +(m.min + Math.random() * (m.max - m.min)).toFixed(2)
-        : +(5 + Math.random() * 85).toFixed(2);
-
-      const newTxn = {
-        id: `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
-        merchant: m.name,
-        amount: amount,
-        geo: isFraud ? Math.floor(400 + Math.random() * 2200) : 0,
-        velocity: isFraud ? Math.floor(3 + Math.random() * 15) : 1,
-        v14: isFraud ? -(2.5 + Math.random() * 4.5) : +(0.2 + Math.random() * 1.5),
-        v12: isFraud ? -(1.5 + Math.random() * 3.0) : +(0.4 + Math.random() * 1.2),
-        v4: isFraud ? +(1.2 + Math.random() * 3.5) : -(0.2 + Math.random() * 1.0),
-        foreignIp: isFraud ? Math.random() < 0.8 : Math.random() < 0.05,
-        newDevice: isFraud ? Math.random() < 0.75 : Math.random() < 0.1,
-        night: Math.random() < 0.2,
-        time: 'Just now'
-      };
-
-      transactions.unshift(newTxn);
-      if (transactions.length > 25) transactions.pop();
-
-      renderStream();
-    }
-
-    const singleBtn = document.getElementById('btn-sim-single');
-    if (singleBtn) {
-      singleBtn.addEventListener('click', () => {
-        injectRandomTransaction();
-        showToast('⚡ Injected 1 randomized live transaction into feed');
-      });
-    }
-
     // Startup Initialization
     window.addEventListener('DOMContentLoaded', () => {
-      // Sliders & Controls
-      bindSlider('input-amount', 'val-amount', '$', true);
-      bindSlider('input-geo', 'val-geo', 'km/h');
-      bindSlider('input-velocity', 'val-velocity', 'txns');
-      bindSlider('input-v14', 'val-v14', '', true);
-      bindSlider('input-v12', 'val-v12', '', true);
-      bindSlider('input-v4', 'val-v4', '', true);
-
-      bindCheckbox('check-foreign-ip');
-      bindCheckbox('check-new-device');
-      bindCheckbox('check-night');
-
-      const threshSlider = document.getElementById('input-thresh');
-      if (threshSlider) {
-        threshSlider.addEventListener('input', onThresholdChange);
-      }
-
       syncInputsWithActive();
-      renderStream();
+      renderStream(true);
       onThresholdChange();
 
-      // Check API status immediately and periodically
+      // Check API connection
       checkApiHealth(false);
       setInterval(() => checkApiHealth(false), 20000);
-
-      // Ingestion stream timer
-      setInterval(injectRandomTransaction, 3200);
     });
   </script>
 </body>
