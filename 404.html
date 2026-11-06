@@ -1573,19 +1573,19 @@
   </div>
 
   <!-- API Connection Settings Modal -->
-  <div class="modal-overlay" id="api-modal">
-    <div class="modal-box">
+  <div class="modal-overlay" id="api-modal" onclick="handleBackdropClick(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-header">
         <div class="modal-title">⚙️ API Backend Configuration</div>
-        <button class="modal-close" onclick="closeApiModal()">&times;</button>
+        <button class="modal-close" id="btn-close-modal" onclick="closeApiModal()" title="Close Settings Modal">&times;</button>
       </div>
       <div class="modal-body">
         <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem; line-height: 1.4;">
-          FraudGuard AI runs machine learning inference against a live FastAPI backend. Update this URL to point to your live Render Web Service or local development server.
+          FraudGuard AI runs machine learning inference against your live FastAPI backend on Render. Update this URL to point to your live Render Web Service or local development server.
         </p>
         <div class="form-group">
           <label class="form-label" for="api-url-input">FastAPI Backend Base URL</label>
-          <input type="text" id="api-url-input" class="form-input" placeholder="https://fraudguard-ai-api.onrender.com">
+          <input type="text" id="api-url-input" class="form-input" placeholder="https://fraudguard-ai-api-2xab.onrender.com" value="https://fraudguard-ai-api-2xab.onrender.com">
         </div>
         <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem; font-size: 0.78rem;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
@@ -1601,9 +1601,10 @@
             <span id="modal-uptime" style="font-family: var(--font-mono); color: var(--cyan);">&mdash;</span>
           </div>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-          <button class="btn" onclick="testModalApiConnection()">Test Connection</button>
-          <button class="btn btn-primary" onclick="saveApiSettings()">Save & Connect</button>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap;">
+          <button class="btn" id="btn-cancel-modal" onclick="closeApiModal()">Close</button>
+          <button class="btn" id="btn-test-modal" onclick="testModalApiConnection()">Test Connection</button>
+          <button class="btn btn-primary" id="btn-save-modal" onclick="saveApiSettings()">Save &amp; Connect</button>
         </div>
       </div>
     </div>
@@ -1640,7 +1641,7 @@
     // Production Frontend Integration (100% Real API Inference, Zero Fake Math)
     // =========================================================================
 
-    const DEFAULT_API_URL = 'https://fraudguard-ai-api.onrender.com';
+    const DEFAULT_API_URL = 'https://fraudguard-ai-api-2xab.onrender.com';
     let apiBaseUrl = localStorage.getItem('fraudguard_api_url') || DEFAULT_API_URL;
     let isApiOnline = false;
     let latestApiLatency = null;
@@ -1661,17 +1662,33 @@
       }
     }
 
-    // Modal Management
+    // Modal Management (Supports both class .open and inline style for maximum robustness)
     function openApiModal() {
       const input = document.getElementById('api-url-input');
       if (input) input.value = apiBaseUrl;
       const modal = document.getElementById('api-modal');
-      if (modal) modal.style.display = 'flex';
+      if (modal) {
+        modal.classList.add('open');
+        modal.style.display = 'flex';
+        modal.style.opacity = '1';
+        modal.style.pointerEvents = 'auto';
+      }
     }
 
     function closeApiModal() {
       const modal = document.getElementById('api-modal');
-      if (modal) modal.style.display = 'none';
+      if (modal) {
+        modal.classList.remove('open');
+        modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none';
+        modal.style.display = 'none';
+      }
+    }
+
+    function handleBackdropClick(event) {
+      if (event.target && event.target.id === 'api-modal') {
+        closeApiModal();
+      }
     }
 
     function saveApiSettings() {
@@ -1685,6 +1702,26 @@
       closeApiModal();
       showToast(`API URL updated to: ${apiBaseUrl}`);
       checkApiHealth(true);
+    }
+
+    // Robust fetch with configurable timeout (e.g., 10s for Render cold starts)
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        if (err.name === 'AbortError') {
+          throw new Error('Request timed out (Render may be starting up, please retry in a few seconds)');
+        }
+        throw err;
+      }
     }
 
     async function testModalApiConnection() {
@@ -1703,7 +1740,7 @@
 
       try {
         const t0 = performance.now();
-        const res = await fetch(`${targetUrl}/health`, { method: 'GET' });
+        const res = await fetchWithTimeout(`${targetUrl}/health`, { method: 'GET' }, 12000);
         const latency = (performance.now() - t0).toFixed(1);
 
         if (res.ok) {
@@ -1738,25 +1775,36 @@
       const dot = document.getElementById('header-api-dot');
       const text = document.getElementById('header-api-text');
 
+      if (dot) dot.style.background = 'var(--amber)';
+      if (text) text.textContent = 'API: Connecting...';
+      if (pill) {
+        pill.style.color = 'var(--amber)';
+        pill.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+      }
+
       try {
         const t0 = performance.now();
-        const res = await fetch(`${apiBaseUrl}/health`, { method: 'GET' });
+        const res = await fetchWithTimeout(`${apiBaseUrl}/health`, { method: 'GET' }, 12000);
         const elapsed = (performance.now() - t0).toFixed(1);
 
         if (res.ok) {
           const data = await res.json();
-          isApiOnline = true;
-          latestApiLatency = elapsed;
-          if (dot) dot.style.background = 'var(--emerald)';
-          if (text) text.textContent = `API: Online (${elapsed}ms)`;
-          if (pill) {
-            pill.style.color = 'var(--emerald)';
-            pill.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          if (data.model_loaded === true) {
+            isApiOnline = true;
+            latestApiLatency = elapsed;
+            if (dot) dot.style.background = 'var(--emerald)';
+            if (text) text.textContent = `API: Online (${elapsed}ms)`;
+            if (pill) {
+              pill.style.color = 'var(--emerald)';
+              pill.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            }
+            if (showFeedback) showToast(`Backend connected (${elapsed}ms)`);
+            fetchApiAnalytics();
+            fetchTransactionFeed(false);
+            updateInspector();
+          } else {
+            throw new Error('Model artifacts not loaded on backend');
           }
-          if (showFeedback) showToast(`Backend connected (${elapsed}ms)`);
-          fetchApiAnalytics();
-          fetchTransactionFeed(false);
-          updateInspector();
         } else {
           throw new Error(`HTTP ${res.status}`);
         }
@@ -1767,7 +1815,7 @@
         if (text) text.textContent = 'API: Offline (Click to configure)';
         if (pill) {
           pill.style.color = 'var(--rose)';
-          pill.style.borderColor = 'rgba(244, 63, 94, 0.3)';
+          pill.style.borderColor = 'rgba(244, 63, 94, 0.4)';
         }
         if (showFeedback) showToast(`Backend offline: ${err.message}`);
         updateInspector();
@@ -1776,7 +1824,7 @@
 
     async function fetchApiAnalytics() {
       try {
-        const res = await fetch(`${apiBaseUrl}/analytics`);
+        const res = await fetchWithTimeout(`${apiBaseUrl}/analytics`, { method: 'GET' }, 8000);
         if (res.ok) {
           latestApiAnalytics = await res.json();
         }
@@ -1886,16 +1934,16 @@
       }
 
       try {
-        const res = await fetch(`${apiBaseUrl}/history?limit=15`);
+        const res = await fetchWithTimeout(`${apiBaseUrl}/history?limit=15`, { method: 'GET' }, 8000);
         if (res.ok) {
           const data = await res.json();
-          const records = data.records || [];
+          const records = data.records || data.transactions || [];
           if (records.length > 0) {
             transactions = records.map((r, idx) => ({
               id: r.transaction_id || `TXN-DB-${r.id}`,
               label: `Backend History #${r.id}`,
-              badge: r.risk_tier,
-              badgeClass: r.risk_tier === 'CRITICAL' || r.risk_tier === 'HIGH' ? 'badge-critical' : (r.risk_tier === 'MEDIUM' ? 'badge-elevated' : 'badge-low'),
+              badge: r.risk_level || r.risk_tier,
+              badgeClass: (r.risk_level || r.risk_tier) === 'CRITICAL' || (r.risk_level || r.risk_tier) === 'HIGH' ? 'badge-critical' : ((r.risk_level || r.risk_tier) === 'MEDIUM' ? 'badge-elevated' : 'badge-low'),
               merchant: `Audited Transaction [${r.is_fraud ? 'FLAGGED' : 'CLEARED'}]`,
               amount: parseFloat(r.amount) || 0,
               geo: 0,
@@ -1906,7 +1954,7 @@
               foreignIp: false,
               newDevice: false,
               night: false,
-              time: r.timestamp ? r.timestamp.replace('T', ' ').substring(11, 19) + ' UTC' : 'Recorded',
+              time: r.created_at ? r.created_at.replace('T', ' ').substring(11, 19) + ' UTC' : 'Recorded',
               isFromBackend: true
             }));
             renderStream(false);
@@ -2070,11 +2118,11 @@
       const payload = buildApiPayload(txn);
       const t0 = performance.now();
 
-      const response = await fetch(`${apiBaseUrl}/predict`, {
+      const response = await fetchWithTimeout(`${apiBaseUrl}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      });
+      }, 10000);
 
       const latencyMs = +(performance.now() - t0).toFixed(2);
       if (!response.ok) {
@@ -2138,7 +2186,6 @@
           else gaugeVal.style.color = 'var(--emerald)';
         }
 
-        // SVG circle fill (circumference = 2 * PI * 90 = 565.48)
         const circumference = 565.48;
         const offset = circumference - (prob * circumference);
         if (gaugeCircle) {
@@ -2148,7 +2195,6 @@
           else gaugeCircle.style.stroke = 'var(--emerald)';
         }
 
-        // Risk tier & Honest Decision Title
         if (gaugeTier) {
           gaugeTier.textContent = `${result.riskTier} RISK`;
           if (result.riskTier === 'CRITICAL' || result.riskTier === 'HIGH') gaugeTier.style.color = '#fca5a5';
@@ -2186,7 +2232,6 @@
           }
         }
 
-        // Model Votes
         const votes = result.modelVotes;
         const xgbProb = votes.xgboost !== undefined ? votes.xgboost : prob;
         const lgbProb = votes.lightgbm !== undefined ? votes.lightgbm : prob;
@@ -2209,7 +2254,6 @@
         updateBar('vote-lgbm', 'bar-lgbm', lgbProb);
         updateBar('vote-rf', 'bar-rf', rfProb);
 
-        // SHAP Factors
         renderShapFactors(result.topFactors);
 
       } catch (err) {
@@ -2384,22 +2428,24 @@
     }
 
     // Drag and Drop
-    const dropzone = document.getElementById('batch-dropzone');
-    if (dropzone) {
-      dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = 'var(--cyan)';
-      });
-      dropzone.addEventListener('dragleave', () => {
-        dropzone.style.borderColor = 'var(--border-color)';
-      });
-      dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = 'var(--border-color)';
-        if (e.dataTransfer.files.length > 0) {
-          uploadBatchCSV(e.dataTransfer.files[0]);
-        }
-      });
+    function setupDropzone() {
+      const dropzone = document.getElementById('batch-dropzone');
+      if (dropzone) {
+        dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropzone.style.borderColor = 'var(--cyan)';
+        });
+        dropzone.addEventListener('dragleave', () => {
+          dropzone.style.borderColor = 'var(--border-color)';
+        });
+        dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropzone.style.borderColor = 'var(--border-color)';
+          if (e.dataTransfer.files.length > 0) {
+            uploadBatchCSV(e.dataTransfer.files[0]);
+          }
+        });
+      }
     }
 
     async function uploadBatchCSV(file) {
@@ -2423,10 +2469,10 @@
 
       try {
         const t0 = performance.now();
-        const res = await fetch(`${apiBaseUrl}/predict-batch`, {
+        const res = await fetchWithTimeout(`${apiBaseUrl}/predict-batch`, {
           method: 'POST',
           body: formData
-        });
+        }, 30000);
 
         const elapsed = (performance.now() - t0).toFixed(1);
 
@@ -2439,7 +2485,6 @@
         batchResultsData = data.predictions || [];
         const summary = data.batch_summary || {};
 
-        // Update telemetry
         document.getElementById('batch-stat-total').textContent = summary.total_transactions || batchResultsData.length;
         document.getElementById('batch-stat-fraud').textContent = summary.fraud_detected || 0;
         document.getElementById('batch-stat-rate').textContent = `Rate: ${((summary.fraud_rate || 0) * 100).toFixed(1)}%`;
@@ -2448,12 +2493,11 @@
         const criticalCount = batchResultsData.filter(p => p.risk_level === 'CRITICAL').length;
         document.getElementById('batch-stat-critical').textContent = criticalCount;
 
-        const avgLat = batchResultsData.length > 0
+        const avgLat = batchResultsData.length > 0 
           ? (batchResultsData.reduce((acc, p) => acc + (p.processing_time_ms || 1.1), 0) / batchResultsData.length).toFixed(2)
           : '1.14';
         document.getElementById('batch-stat-latency').textContent = `${avgLat}ms`;
 
-        // Render Table Rows
         renderBatchTable(batchResultsData);
 
         const summaryBox = document.getElementById('batch-summary-box');
@@ -2505,10 +2549,10 @@
         const formData = new FormData();
         formData.append('file', batchUploadedFile);
 
-        const res = await fetch(`${apiBaseUrl}/predict-batch?download=true`, {
+        const res = await fetchWithTimeout(`${apiBaseUrl}/predict-batch?download=true`, {
           method: 'POST',
           body: formData
-        });
+        }, 30000);
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
@@ -2546,11 +2590,11 @@
       tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--cyan); padding: 2rem;">Loading persistent records from backend...</td></tr>';
 
       try {
-        const res = await fetch(`${apiBaseUrl}/history?limit=100`);
+        const res = await fetchWithTimeout(`${apiBaseUrl}/history?limit=100`, { method: 'GET' }, 8000);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
-        historyRecords = data.records || [];
+        historyRecords = data.records || data.transactions || [];
 
         if (historyRecords.length === 0) {
           tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-dim); padding: 2rem;">No transaction prediction logs recorded yet.</td></tr>';
@@ -2573,18 +2617,18 @@
         const probPct = (r.fraud_probability * 100).toFixed(1);
 
         let tierColor = 'var(--emerald)';
-        if (r.risk_tier === 'CRITICAL' || r.risk_tier === 'HIGH') tierColor = 'var(--crimson)';
-        else if (r.risk_tier === 'MEDIUM') tierColor = 'var(--amber)';
+        if ((r.risk_level || r.risk_tier) === 'CRITICAL' || (r.risk_level || r.risk_tier) === 'HIGH') tierColor = 'var(--crimson)';
+        else if ((r.risk_level || r.risk_tier) === 'MEDIUM') tierColor = 'var(--amber)';
 
         tr.innerHTML = `
           <td style="font-family: var(--font-mono); color: var(--text-dim);">${r.id}</td>
           <td style="font-family: var(--font-mono); font-weight: 600;">${r.transaction_id}</td>
           <td>$${(r.amount || 0).toFixed(2)}</td>
           <td style="font-family: var(--font-mono); font-weight: 700; color: ${tierColor};">${probPct}%</td>
-          <td><span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: ${tierColor}22; color: ${tierColor}; border: 1px solid ${tierColor}44;">${r.risk_tier}</span></td>
+          <td><span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: ${tierColor}22; color: ${tierColor}; border: 1px solid ${tierColor}44;">${r.risk_level || r.risk_tier}</span></td>
           <td style="font-family: var(--font-mono);">${((r.confidence_score || 0.95) * 100).toFixed(0)}%</td>
           <td style="font-family: var(--font-mono); color: var(--text-dim);">${(r.processing_time_ms || 1.1).toFixed(2)}ms</td>
-          <td style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);">${r.timestamp ? r.timestamp.replace('T', ' ').substring(0, 19) : '—'}</td>
+          <td style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim);">${(r.created_at || r.timestamp) ? (r.created_at || r.timestamp).replace('T', ' ').substring(0, 19) : '—'}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -2596,7 +2640,8 @@
 
       const filtered = historyRecords.filter(r => {
         const matchesId = !search || (r.transaction_id && r.transaction_id.toLowerCase().includes(search));
-        const matchesRisk = !risk || r.risk_tier === risk;
+        const tier = r.risk_level || r.risk_tier;
+        const matchesRisk = !risk || tier === risk;
         return matchesId && matchesRisk;
       });
 
@@ -2615,16 +2660,47 @@
       }, 3500);
     }
 
+    // Explicitly attach global handlers to window object for reliable HTML onclick binding
+    window.openApiModal = openApiModal;
+    window.closeApiModal = closeApiModal;
+    window.handleBackdropClick = handleBackdropClick;
+    window.saveApiSettings = saveApiSettings;
+    window.testModalApiConnection = testModalApiConnection;
+    window.switchView = switchView;
+    window.loadPreset = loadPreset;
+    window.onFeatureChange = onFeatureChange;
+    window.onThresholdChange = onThresholdChange;
+    window.triggerAction = triggerAction;
+    window.handleFileSelect = handleFileSelect;
+    window.downloadSampleTemplate = downloadSampleTemplate;
+    window.exportBatchResultsCSV = exportBatchResultsCSV;
+    window.fetchTransactionHistory = fetchTransactionHistory;
+    window.filterHistoryTable = filterHistoryTable;
+    window.fetchTransactionFeed = fetchTransactionFeed;
+    window.loadSampleProfiles = loadSampleProfiles;
+
     // Startup Initialization
     window.addEventListener('DOMContentLoaded', () => {
+      // Ensure pill is bound via event listener in addition to inline onclick
+      const apiPill = document.getElementById('header-api-status');
+      if (apiPill) {
+        apiPill.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openApiModal();
+        });
+      }
+
+      setupDropzone();
       syncInputsWithActive();
       renderStream(true);
       onThresholdChange();
 
-      // Check API connection
+      // Check API connection immediately
       checkApiHealth(false);
-      setInterval(() => checkApiHealth(false), 20000);
+      setInterval(() => checkApiHealth(false), 25000);
     });
+
   </script>
 </body>
 </html>
