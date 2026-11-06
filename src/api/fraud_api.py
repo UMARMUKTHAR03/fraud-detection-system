@@ -21,6 +21,11 @@ import json
 import logging
 import os
 import sqlite3
+import tempfile
+
+# Pre-configure writable matplotlib cache directory to avoid permissions issues/warnings
+if "MPLCONFIGDIR" not in os.environ:
+    os.environ["MPLCONFIGDIR"] = os.path.join(tempfile.gettempdir(), "fraudguard_mpl")
 import sys
 import time
 from contextlib import asynccontextmanager
@@ -45,7 +50,8 @@ logger = logging.getLogger(__name__)
 # Paths
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODELS_DIR = os.path.join(ROOT_DIR, "models")
-DATA_DIR = os.path.join(ROOT_DIR, "data")
+# Configurable persistent data directory matching Render mount path /opt/render/project/src/data
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(ROOT_DIR, "data"))
 DB_PATH = os.path.join(DATA_DIR, "fraud_history.db")
 
 def get_utc_now_iso() -> str:
@@ -55,6 +61,7 @@ def get_utc_now_iso() -> str:
 # Lifespan context manager replacing deprecated @app.on_event("startup")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_db()
     load_models()
     yield
 
@@ -68,11 +75,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware with environment-based expansion
+# Secure CORS middleware: restricted to official GitHub Pages and explicit development origins
 custom_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
 parsed_custom = [o.strip() for o in custom_origins_env.split(",") if o.strip()]
 
-origins = [
+# Strict origin whitelist - no wildcard, no broad regex pattern
+allowed_origins = [
     "https://umarmukthar03.github.io",
     "http://localhost:3000",
     "http://localhost:8000",
@@ -81,15 +89,23 @@ origins = [
     "http://127.0.0.1:8000",
     "http://127.0.0.1:8080",
     "http://127.0.0.1:5500",
-] + parsed_custom
+] + [o for o in parsed_custom if o not in [
+    "https://umarmukthar03.github.io",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://localhost:8080",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:5500",
+]]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if not os.environ.get("CORS_ALLOW_ALL") else ["*"],
-    allow_origin_regex=r"https:\/\/.*\.github\.io|https:\/\/.*\.onrender\.com|http:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?",
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
 )
 
 # Global model state
@@ -546,10 +562,10 @@ async def get_history(
                 }
             )
 
-        return {"total": len(results), "transactions": results}
+        return {"total": len(results), "transactions": results, "records": results}
     except Exception as e:
         logger.error(f"Error fetching history: {e}")
-        return {"total": 0, "transactions": []}
+        return {"total": 0, "transactions": [], "records": []}
 
 
 @app.post("/predict", response_model=FraudPredictionResponse)

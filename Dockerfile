@@ -6,6 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 ENV PYTHONPATH=/app
+ENV DATA_DIR=/app/data
+ENV MPLCONFIGDIR=/tmp/matplotlib
 
 WORKDIR /app
 
@@ -22,8 +24,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Ensure data directory exists for SQLite history persistence
-RUN mkdir -p /app/data
+# Ensure data directory and cache directory exist for SQLite history persistence
+RUN mkdir -p /app/data /tmp/matplotlib
 
 # Expose API port (documentary; Render sets PORT environment dynamically)
 EXPOSE 8000
@@ -34,4 +36,3 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Launch production ASGI server with single high-throughput worker (prevents duplicating model memory in free-tier container)
 CMD ["sh", "-c", "exec uvicorn src.api.fraud_api:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
-

@@ -25,10 +25,10 @@
 
 **FraudGuard AI** is a production-grade, low-latency financial fraud detection and risk analytics software platform. Designed for neobanks, payment processors, and e-commerce platforms, the engine performs transaction scoring in sub-millisecond time, classifying transactions into granular operational risk tiers:
 
-- 🟢 **LOW (< 25%)**: Cleared for immediate settlement.
-- 🔵 **MEDIUM (25% – 49.99%)**: Flagged for real-time monitoring and soft verification.
-- 🟡 **HIGH (50% – 74.99%)**: Trigger automated 2FA / biometric step-up verification.
-- 🔴 **CRITICAL (≥ 75%)**: Immediate automated authorization halt and card/account freeze.
+- 🟢 **LOW (< 25%)**: Recommend approval; typical genuine transaction baseline.
+- 🔵 **MEDIUM (25% – 49.99%)**: Recommend monitoring; moderate latent or velocity deviation.
+- 🟡 **HIGH (50% – 74.99%)**: Recommend step-up verification challenge (e.g. out-of-band OTP).
+- 🔴 **CRITICAL (≥ 75%)**: Recommend immediate transaction rejection and account block review.
 
 ---
 
@@ -235,7 +235,9 @@ python app.py
 
 The interactive Swagger UI will be available at `http://localhost:8000/docs`.
 
-### 4. Deploying to Render (Cloud Production)
+### 4. Cloud Deployment (Render Blueprint Configuration)
+
+> **Deployment State Disclosure**: FraudGuard AI repository includes full Render Blueprint configuration (`render.yaml`) and Docker build recipes (`Dockerfile`). The cloud service can be launched on-demand on Render; when deployed, the GitHub Pages frontend can be connected via the header configuration modal.
 
 FraudGuard AI is pre-configured for automated one-click containerized deployment via Render:
 
@@ -255,14 +257,14 @@ FraudGuard AI is pre-configured for automated one-click containerized deployment
 python -m pytest tests/ -v
 ```
 
-*All 21 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, and CSV batch file upload handlers.*
+*All 24 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, CORS security, SQLite persistence, and batch CSV handlers.*
 
 ---
 
 ## 🔒 Security & Prototype Disclosure
 
 > [!NOTE]
-> **Prototype Architecture Notice**: This software implementation demonstrates a complete, production-ready machine learning pipeline and API architecture. In an enterprise financial deployment, this service should be integrated behind an enterprise API gateway (such as Kong, Apigee, or AWS API Gateway) with mTLS authentication, hardware security modules (HSM) for key custody, and bank PCI-DSS audited ingress filters.
+> **Prototype & Advisory Decision Notice**: This software platform serves as an algorithmic decision-support prototype. Model inferences and risk tier assignments provide recommendations only; the system does not execute live banking transactions, debit accounts, freeze credit cards, or dispatch live SMS OTPs. In an enterprise financial deployment, this service must be connected to bank core ledger rails behind an enterprise API gateway (e.g., Kong, Apigee) with mTLS authentication, PCI-DSS compliance audits, and hardware security modules (HSM).
 
 ---
 

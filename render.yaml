@@ -16,12 +16,11 @@ services:
         value: 8000
       - key: PYTHONPATH
         value: .
-      - key: CORS_ALLOW_ALL
-        value: "true"
+      - key: DATA_DIR
+        value: /opt/render/project/src/data
       - key: ALLOWED_ORIGINS
         value: "https://umarmukthar03.github.io,http://localhost:3000,http://localhost:8000,http://127.0.0.1:5500"
     disk:
       name: fraudguard-data
       mountPath: /opt/render/project/src/data
       sizeGB: 1
-

@@ -6,17 +6,23 @@ Tests:
 - GET /analytics
 - GET /history (with filter & limit)
 - POST /predict-batch (CSV upload multipart)
+- POST /predict-batch?download=true (CSV results download)
+- GET /sample-template (Sample CSV schema template)
+- CORS security verification (GitHub Pages origin allowed, unknown origin disallowed)
+- SQLite persistent storage configuration & data retention verification
 """
 
 import io
 import os
+import sqlite3
 import sys
+import tempfile
 import pytest
 from fastapi.testclient import TestClient
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.api.fraud_api import app
+from src.api.fraud_api import app, DB_PATH, DATA_DIR, init_db, log_prediction_to_db
 
 client = TestClient(app)
 
@@ -61,8 +67,8 @@ def test_history_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert "total" in data
-    assert "transactions" in data
-    assert isinstance(data["transactions"], list)
+    assert "records" in data
+    assert isinstance(data["records"], list)
 
 
 def test_predict_batch_csv_upload():
@@ -93,3 +99,60 @@ def test_predict_batch_csv_download():
     assert "Fraud_Probability" in text
     assert "Risk_Level" in text
 
+
+def test_sample_template_endpoint():
+    response = client.get("/sample-template")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "text/csv; charset=utf-8"
+    assert "Time" in response.text and "Amount" in response.text
+
+
+def test_cors_security_headers():
+    # 1. Allowed GitHub Pages origin
+    res_allowed = client.options(
+        "/predict",
+        headers={
+            "Origin": "https://umarmukthar03.github.io",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert res_allowed.headers.get("access-control-allow-origin") == "https://umarmukthar03.github.io"
+    assert res_allowed.headers.get("access-control-allow-credentials") is None
+
+    # 2. Disallowed origin (no wildcard matching)
+    res_disallowed = client.options(
+        "/predict",
+        headers={
+            "Origin": "https://malicious-site.com",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert res_disallowed.headers.get("access-control-allow-origin") is None
+
+
+def test_sqlite_persistence_across_reconnect():
+    # Verify that records logged to DB_PATH survive and can be retrieved directly via sqlite3
+    init_db()
+    test_record = {
+        "transaction_id": "TXN-PERSIST-TEST",
+        "amount": 999.99,
+        "time": 12345.0,
+        "fraud_probability": 0.88,
+        "is_fraud": 1,
+        "risk_level": "CRITICAL",
+        "confidence_score": 0.99,
+        "processing_time_ms": 1.25,
+        "explanation": {"test": True},
+    }
+    log_prediction_to_db(test_record)
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT amount, risk_level, is_fraud FROM transaction_history WHERE transaction_id = ?", ("TXN-PERSIST-TEST",))
+    row = cursor.fetchone()
+    conn.close()
+
+    assert row is not None
+    assert row[0] == 999.99
+    assert row[1] == "CRITICAL"
+    assert row[2] == 1
