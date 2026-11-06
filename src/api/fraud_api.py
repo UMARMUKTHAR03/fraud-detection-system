@@ -113,6 +113,16 @@ best_model = None
 scaler = None
 explainer = None
 ensemble_model = None
+# Empirical dataset population means derived from training artifacts for missing-value handling
+POPULATION_DEFAULTS = {
+    "V1": -0.936786, "V2": 1.005415, "V3": 1.022082, "V4": 0.958918,
+    "V5": -0.96937, "V6": 0.98872, "V7": -0.99786, "V8": 0.99639,
+    "V9": 0.969, "V10": 0.000593, "V11": -0.944742, "V12": -5.231849,
+    "V13": -1.005169, "V14": -0.950391, "V15": 1.034456, "V16": 0.879585,
+    "V17": -0.979328, "V18": 0.008808, "V19": 0.96065, "V20": -2.138873,
+    "Hour": 11.469094, "DayOfWeek": 1.01075, "CustomerRiskScore": 0.285,
+}
+
 feature_names = []
 metrics_data = {}
 model_loaded = False
@@ -231,6 +241,13 @@ class TransactionRequest(BaseModel):
     def validate_time(cls, v: float) -> float:
         if v < 0:
             raise ValueError("Time must be non-negative")
+        return v
+
+    @field_validator("CustomerRiskScore")
+    @classmethod
+    def validate_customer_risk_score(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and not (0.0 <= v <= 1.0):
+            raise ValueError("CustomerRiskScore must be between 0.0 and 1.0")
         return v
 
 
@@ -591,9 +608,9 @@ async def predict_fraud(
             elif col == "DayOfWeek":
                 row_dict[col] = float((data_dict.get("Time", 0) / 86400) % 7)
             elif col == "CustomerRiskScore":
-                row_dict[col] = 0.50
+                row_dict[col] = POPULATION_DEFAULTS.get("CustomerRiskScore", 0.285)
             else:
-                row_dict[col] = 0.0
+                row_dict[col] = POPULATION_DEFAULTS.get(col, 0.0)
 
         raw_df = pd.DataFrame([row_dict], columns=feature_names)
         scaled_df = pd.DataFrame(scaler.transform(raw_df), columns=feature_names)
@@ -798,9 +815,9 @@ async def execute_batch(transactions: List[TransactionRequest]) -> BatchPredicti
             elif col == "DayOfWeek":
                 row_dict[col] = float((d.get("Time", 0) / 86400) % 7)
             elif col == "CustomerRiskScore":
-                row_dict[col] = 0.50
+                row_dict[col] = POPULATION_DEFAULTS.get("CustomerRiskScore", 0.285)
             else:
-                row_dict[col] = 0.0
+                row_dict[col] = POPULATION_DEFAULTS.get(col, 0.0)
         rows.append(row_dict)
 
     batch_df = pd.DataFrame(rows, columns=feature_names)

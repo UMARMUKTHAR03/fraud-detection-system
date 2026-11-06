@@ -1274,9 +1274,20 @@
               </div>
               <input type="range" id="input-v4" min="-10" max="10" step="0.1" value="2.45" oninput="onFeatureChange()">
             </div>
+
+            <div class="control-item" style="grid-column: span 2;">
+              <div class="control-label">
+                <span>Customer Risk Profile Score (Model Feature #1: Range 0.0 - 1.0, Baseline: 0.28)</span>
+                <span class="control-val" id="val-risk-score" style="color: var(--cyan); font-weight: 700;">0.28</span>
+              </div>
+              <input type="range" id="input-risk-score" min="0" max="1" step="0.01" value="0.28" oninput="onFeatureChange()">
+            </div>
           </div>
 
           <div class="toggle-group">
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">
+              🛡️ Contextual Operational Flags <span style="color: var(--text-dim); text-transform: none;">(Auxiliary risk telemetry)</span>
+            </div>
             <label class="toggle-label">
               <span class="toggle-switch">
                 <input type="checkbox" id="check-foreign-ip" checked onchange="onFeatureChange()">
@@ -1833,7 +1844,7 @@
       }
     }
 
-    // Static Demonstration Sample Profiles (Clearly Disclosed Benchmark Data)
+    // Static Demonstration Sample Profiles (Calibrated Benchmark Data)
     const staticSampleProfiles = [
       {
         id: 'SMPL-TAKEOVER',
@@ -1842,6 +1853,7 @@
         badgeClass: 'badge-critical',
         merchant: 'CryptoVault Overseas [SG]',
         amount: 4850.00,
+        riskScore: 0.85,
         geo: 1240,
         velocity: 14,
         v14: -4.8,
@@ -1858,12 +1870,13 @@
         badge: 'CLEAN',
         badgeClass: 'badge-low',
         merchant: 'Whole Foods Market #108 [US]',
-        amount: 42.50,
+        amount: 43.89,
+        riskScore: 0.08,
         geo: 0,
         velocity: 1,
-        v14: 0.8,
-        v12: 1.2,
-        v4: -0.4,
+        v14: -3.07,
+        v12: -4.85,
+        v4: 2.49,
         foreignIp: false,
         newDevice: false,
         night: false,
@@ -1876,11 +1889,12 @@
         badgeClass: 'badge-critical',
         merchant: 'Nordic Airlines Online [NO]',
         amount: 1299.00,
+        riskScore: 0.78,
         geo: 2150,
         velocity: 8,
-        v14: -3.2,
-        v12: -2.1,
-        v4: 1.9,
+        v14: 2.50,
+        v12: -2.10,
+        v4: 1.90,
         foreignIp: true,
         newDevice: true,
         night: false,
@@ -1893,11 +1907,12 @@
         badgeClass: 'badge-elevated',
         merchant: 'Digital Gaming Steam [LU]',
         amount: 1.85,
+        riskScore: 0.65,
         geo: 0,
         velocity: 22,
-        v14: -1.8,
-        v12: -0.9,
-        v4: 1.4,
+        v14: -1.80,
+        v12: -0.90,
+        v4: 1.40,
         foreignIp: true,
         newDevice: true,
         night: true,
@@ -1910,11 +1925,12 @@
         badgeClass: 'badge-low',
         merchant: 'Corporate Payroll ACME [US]',
         amount: 3450.00,
+        riskScore: 0.12,
         geo: 0,
         velocity: 1,
-        v14: 0.9,
-        v12: 1.0,
-        v4: -0.8,
+        v14: -0.95,
+        v12: -5.23,
+        v4: 0.96,
         foreignIp: false,
         newDevice: false,
         night: false,
@@ -2051,6 +2067,9 @@
       setVal('input-v4', activeTxn.v4);
       setText('val-v4', activeTxn.v4);
 
+      setVal('input-risk-score', activeTxn.riskScore !== undefined ? activeTxn.riskScore : 0.28);
+      setText('val-risk-score', (activeTxn.riskScore !== undefined ? activeTxn.riskScore : 0.28).toFixed(2));
+
       setChecked('check-foreign-ip', activeTxn.foreignIp);
       setChecked('check-new-device', activeTxn.newDevice);
       setChecked('check-night', activeTxn.night);
@@ -2065,6 +2084,7 @@
       activeTxn.v14 = parseFloat(document.getElementById('input-v14').value) || 0;
       activeTxn.v12 = parseFloat(document.getElementById('input-v12').value) || 0;
       activeTxn.v4 = parseFloat(document.getElementById('input-v4').value) || 0;
+      activeTxn.riskScore = parseFloat(document.getElementById('input-risk-score').value) || 0.28;
       activeTxn.foreignIp = document.getElementById('check-foreign-ip').checked;
       activeTxn.newDevice = document.getElementById('check-new-device').checked;
       activeTxn.night = document.getElementById('check-night').checked;
@@ -2080,36 +2100,38 @@
       document.getElementById('val-v14').textContent = activeTxn.v14;
       document.getElementById('val-v12').textContent = activeTxn.v12;
       document.getElementById('val-v4').textContent = activeTxn.v4;
+      document.getElementById('val-risk-score').textContent = activeTxn.riskScore.toFixed(2);
 
       updateInspector();
     }
 
-    // Build payload for backend prediction API
+    // Build payload for backend prediction API with empirical population defaults for unobserved PCA dimensions
     function buildApiPayload(txn) {
       return {
         transaction_id: txn.id,
         Time: Math.floor(Date.now() / 1000) % 172800,
         Amount: parseFloat(txn.amount) || 0.0,
-        V1: 0.0,
-        V2: 0.0,
-        V3: 0.0,
-        V4: parseFloat(txn.v4) || 0.0,
-        V5: 0.0,
-        V6: 0.0,
-        V7: 0.0,
-        V8: 0.0,
-        V9: 0.0,
-        V10: 0.0,
-        V11: 0.0,
-        V12: parseFloat(txn.v12) || 0.0,
-        V13: 0.0,
-        V14: parseFloat(txn.v14) || 0.0,
-        V15: 0.0,
-        V16: 0.0,
-        V17: 0.0,
-        V18: 0.0,
-        V19: 0.0,
-        V20: 0.0
+        CustomerRiskScore: txn.riskScore !== undefined ? parseFloat(txn.riskScore) : 0.28,
+        V1: -0.936786,
+        V2: 1.005415,
+        V3: 1.022082,
+        V4: parseFloat(txn.v4) !== undefined && !isNaN(parseFloat(txn.v4)) ? parseFloat(txn.v4) : 0.958918,
+        V5: -0.96937,
+        V6: 0.98872,
+        V7: -0.99786,
+        V8: 0.99639,
+        V9: 0.969,
+        V10: 0.000593,
+        V11: -0.944742,
+        V12: parseFloat(txn.v12) !== undefined && !isNaN(parseFloat(txn.v12)) ? parseFloat(txn.v12) : -5.231849,
+        V13: -1.005169,
+        V14: parseFloat(txn.v14) !== undefined && !isNaN(parseFloat(txn.v14)) ? parseFloat(txn.v14) : -0.950391,
+        V15: 1.034456,
+        V16: 0.879585,
+        V17: -0.979328,
+        V18: 0.008808,
+        V19: 0.96065,
+        V20: -2.138873
       };
     }
 

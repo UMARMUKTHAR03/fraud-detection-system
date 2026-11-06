@@ -156,3 +156,51 @@ def test_sqlite_persistence_across_reconnect():
     assert row[0] == 999.99
     assert row[1] == "CRITICAL"
     assert row[2] == 1
+
+
+def test_customer_risk_score_validation_and_population_defaults():
+    # 1. Test invalid CustomerRiskScore (< 0.0 or > 1.0) returns 422
+    invalid_low = {
+        "Time": 100.0,
+        "Amount": 50.0,
+        "CustomerRiskScore": -0.5,
+        **{f"V{i}": 0.0 for i in range(1, 21)},
+    }
+    res_low = client.post("/predict", json=invalid_low)
+    assert res_low.status_code == 422
+
+    invalid_high = {
+        "Time": 100.0,
+        "Amount": 50.0,
+        "CustomerRiskScore": 1.5,
+        **{f"V{i}": 0.0 for i in range(1, 21)},
+    }
+    res_high = client.post("/predict", json=invalid_high)
+    assert res_high.status_code == 422
+
+    # 2. Test valid CustomerRiskScore is accepted and influences probability
+    clean_txn = {
+        "Time": 100.0,
+        "Amount": 43.89,
+        "CustomerRiskScore": 0.08,
+        "V4": 2.49,
+        "V12": -4.85,
+        "V14": -3.07,
+        **{f"V{i}": 0.0 for i in range(1, 21) if f"V{i}" not in ["V4", "V12", "V14"]},
+    }
+    res_clean = client.post("/predict", json=clean_txn)
+    assert res_clean.status_code == 200
+    data_clean = res_clean.json()
+    assert "fraud_probability" in data_clean
+    assert data_clean["risk_level"] in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
+    # 3. Test missing CustomerRiskScore uses calibrated baseline
+    omitted_crs = {
+        "Time": 100.0,
+        "Amount": 43.89,
+        **{f"V{i}": 0.0 for i in range(1, 21)},
+    }
+    res_omitted = client.post("/predict", json=omitted_crs)
+    assert res_omitted.status_code == 200
+    data_omitted = res_omitted.json()
+    assert "fraud_probability" in data_omitted
