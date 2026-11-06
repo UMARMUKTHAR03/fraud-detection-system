@@ -209,3 +209,5 @@ __marimo__/
 # Local SQLite databases & pipeline metadata
 *.db
 feature_pipeline_metadata_*.json
+
+data/raw/

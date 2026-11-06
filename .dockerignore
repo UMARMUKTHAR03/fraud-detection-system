@@ -1,68 +1,25 @@
-# Git files
 .git
-.gitignore
-README.md
-
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
-venv/
-env/
-ENV/
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Logs
+.github
+.pytest_cache
+.vscode
+.idea
+__pycache__
+*.pyc
+*.pyo
+*.pyd
 *.log
-logs/
-
-# Testing
 .coverage
-.pytest_cache/
-.tox/
-
-# Documentation
-docs/
+htmlcov
+dist
+build
+*.egg-info
+.env
+.venv
+env/
+venv/
+data/raw/*.csv
+feature_pipeline_metadata_*.json
+notebooks/.ipynb_checkpoints
 *.md
-
-# Large data files (keep models though)
-data/raw/
-*.csv
-*.parquet
-
-# Docker files (don't copy into container)
-Dockerfile*
-docker-compose*.yml
-.dockerignore
+LICENSE
+.nojekyll

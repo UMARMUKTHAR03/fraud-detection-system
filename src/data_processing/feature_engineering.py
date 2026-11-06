@@ -17,6 +17,7 @@ Version: 2.0.0
 
 import hashlib
 import json
+import os
 import warnings
 from dataclasses import dataclass
 from datetime import datetime
@@ -1097,10 +1098,14 @@ class AdvancedFeatureEngineering:
         }
 
         # Save to file (in production, save to feature store or database)
-        with open(
-            f"feature_pipeline_metadata_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w"
-        ) as f:
-            json.dump(metadata, f, indent=2)
+        metadata_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data")
+        os.makedirs(metadata_dir, exist_ok=True)
+        metadata_file = os.path.join(metadata_dir, f"feature_pipeline_metadata_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        try:
+            with open(metadata_file, "w") as f:
+                json.dump(metadata, f, indent=2)
+        except Exception:
+            pass
 
     def get_feature_importance_report(self) -> Dict[str, Any]:
         """

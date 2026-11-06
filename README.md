@@ -86,16 +86,18 @@ Every prediction through FraudGuard AI generates local feature attributions powe
 
 ```mermaid
 graph TD
-    A["Raw Transaction / POS Event"] --> B["FastAPI Microservice (REST / JSON / CSV)"]
-    B --> C["Data Validation (Pydantic v2 Models)"]
-    C --> D["Feature Preprocessing & Scaling (models/scaler.joblib)"]
-    D --> E["Champion Model Inference (models/best_model.joblib - XGBoost)"]
-    D --> F["Soft-Voting Ensemble Engine (models/fraud_detection_ensemble.pkl)"]
-    E --> G["Risk Tier Classifier (LOW, MEDIUM, HIGH, CRITICAL)"]
-    E --> H["Explainable AI (models/explainer.joblib - SHAP)"]
-    G --> I["SQLite Persistence (data/fraud_history.db)"]
-    H --> I
-    I --> J["JSON API Response / Web Dashboard UI"]
+    A["Web Browser / FinTech Client"] --> B["GitHub Pages SPA Frontend (HTML5 / Vanilla JS / CSS3)"]
+    B -- "HTTPS REST Requests (JSON / CSV)" --> C["Render Cloud Web Service (FastAPI / Uvicorn)"]
+    C --> D["Pydantic Validation & Ingestion Pipeline"]
+    D --> E["Feature Preprocessing & RobustScaler (models/scaler.joblib)"]
+    E --> F["Champion Model Inference (models/best_model.joblib - XGBoost)"]
+    E --> G["Soft-Voting Ensemble Engine (models/fraud_detection_ensemble.pkl)"]
+    F --> H["Calibrated Risk Classifier (LOW, MEDIUM, HIGH, CRITICAL)"]
+    F --> I["Explainable AI Engine (models/explainer.joblib - TreeSHAP)"]
+    H --> J["SQLite Transaction Logger (data/fraud_history.db / Persistent Disk)"]
+    I --> J
+    J --> K["JSON API Response with Latency & Confidence"]
+    K --> B
 ```
 
 ---
@@ -223,13 +225,29 @@ pip install -r requirements.txt
 python src/models/train_pipeline.py
 ```
 
-### 3. Launch the Backend API
+### 3. Launch the Backend API (Local Development)
 
 ```bash
 uvicorn src.api.fraud_api:app --host 0.0.0.0 --port 8000 --reload
+# or using root entrypoint:
+python app.py
 ```
 
 The interactive Swagger UI will be available at `http://localhost:8000/docs`.
+
+### 4. Deploying to Render (Cloud Production)
+
+FraudGuard AI is pre-configured for automated one-click containerized deployment via Render:
+
+- **Blueprint File:** [`render.yaml`](render.yaml)
+- **Container Build:** [`Dockerfile`](Dockerfile) (Python 3.11-slim)
+- **Persistent Storage:** 1GB Persistent Disk mounted at `/app/data` to retain SQLite transaction logs (`data/fraud_history.db`).
+
+**Deploy with Render Blueprint:**
+1. Fork or push this repository to GitHub.
+2. Sign in to [Render](https://render.com) and create a **New > Blueprint**.
+3. Select your repository. Render automatically reads `render.yaml`, provisions the `fraudguard-ai-api` web service, and assigns an HTTPS URL (e.g., `https://fraudguard-ai-api.onrender.com`).
+4. In the live GitHub Pages frontend, click the **API Status** badge in the header, input your deployed Render URL, and test the live connection.
 
 ### 4. Run the Full Test Suite
 
@@ -237,7 +255,7 @@ The interactive Swagger UI will be available at `http://localhost:8000/docs`.
 python -m pytest tests/ -v
 ```
 
-*All 20 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, and file upload handlers.*
+*All 21 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, and CSV batch file upload handlers.*
 
 ---
 

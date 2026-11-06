@@ -23,7 +23,8 @@ import os
 import sqlite3
 import sys
 import time
-from datetime import datetime
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
 import joblib
@@ -31,7 +32,7 @@ import numpy as np
 import pandas as pd
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 
 # Setup logging
@@ -47,6 +48,16 @@ MODELS_DIR = os.path.join(ROOT_DIR, "models")
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 DB_PATH = os.path.join(DATA_DIR, "fraud_history.db")
 
+def get_utc_now_iso() -> str:
+    """Return timezone-aware ISO 8601 UTC timestamp."""
+    return datetime.now(timezone.utc).isoformat()
+
+# Lifespan context manager replacing deprecated @app.on_event("startup")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_models()
+    yield
+
 # Initialize FastAPI app
 app = FastAPI(
     title="FraudGuard AI API",
@@ -54,9 +65,13 @@ app = FastAPI(
     version="2.4.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
-# CORS middleware
+# CORS middleware with environment-based expansion
+custom_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
+parsed_custom = [o.strip() for o in custom_origins_env.split(",") if o.strip()]
+
 origins = [
     "https://umarmukthar03.github.io",
     "http://localhost:3000",
@@ -66,12 +81,14 @@ origins = [
     "http://127.0.0.1:8000",
     "http://127.0.0.1:8080",
     "http://127.0.0.1:5500",
-]
+] + parsed_custom
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permits local file:// and custom host testing while allowing pages
+    allow_origins=origins if not os.environ.get("CORS_ALLOW_ALL") else ["*"],
+    allow_origin_regex=r"https:\/\/.*\.github\.io|https:\/\/.*\.onrender\.com|http:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS", "HEAD"],
     allow_headers=["*"],
 )
 
@@ -140,7 +157,7 @@ def log_prediction_to_db(record: Dict[str, Any]):
                 record.get("confidence_score"),
                 record.get("processing_time_ms"),
                 json.dumps(record.get("explanation", {})),
-                datetime.utcnow().isoformat(),
+                get_utc_now_iso(),
             ),
         )
         conn.commit()
@@ -217,6 +234,7 @@ class FraudPredictionResponse(BaseModel):
     confidence_score: float = Field(..., ge=0, le=1)
     explanation: Optional[Dict[str, Any]] = None
     top_risk_factors: Optional[List[Dict[str, Any]]] = None
+    model_votes: Optional[Dict[str, float]] = None
     processing_time_ms: float
     model_version: str
     timestamp: str
@@ -283,7 +301,7 @@ def load_models() -> bool:
         init_db()
 
         model_loaded = best_model is not None and scaler is not None
-        model_load_time = datetime.utcnow().isoformat()
+        model_load_time = get_utc_now_iso()
         logger.info(f"✅ Models loaded successfully. Model loaded: {model_loaded}")
         return model_loaded
     except Exception as e:
@@ -372,14 +390,6 @@ async def check_model_dependency():
 
 
 # ---------------------------------------------------------------------
-# Startup Hooks
-# ---------------------------------------------------------------------
-@app.on_event("startup")
-async def startup_event():
-    load_models()
-
-
-# ---------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------
 @app.get("/", response_model=Dict[str, str])
@@ -398,7 +408,7 @@ async def root():
 async def health_check():
     return HealthCheckResponse(
         status="healthy" if model_loaded else "unhealthy",
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=get_utc_now_iso(),
         model_loaded=model_loaded,
         model_load_time=model_load_time,
         uptime_seconds=round(time.time() - start_time, 2),
@@ -437,11 +447,33 @@ async def analytics():
         "production_model": metrics_data.get("production_model", "XGBoost"),
         "model_comparison": metrics_data.get("model_comparison", {}),
         "holdout_evaluation": metrics_data.get("holdout_evaluation", {}),
+        "model_selection_rationale": metrics_data.get("model_selection_rationale", {}),
+        "latency_benchmark": metrics_data.get("latency_benchmark", {}),
         "top_features": metrics_data.get("top_features", []),
         "roc_curve": metrics_data.get("roc_curve", []),
         "pr_curve": metrics_data.get("pr_curve", []),
-        "updated_at": metrics_data.get("timestamp", datetime.utcnow().isoformat()),
+        "updated_at": metrics_data.get("timestamp", get_utc_now_iso()),
     }
+
+
+@app.get("/sample-template")
+async def get_sample_template():
+    """Return a sample CSV template for batch evaluation."""
+    sample_file = os.path.join(DATA_DIR, "sample_transactions.csv")
+    if os.path.exists(sample_file):
+        with open(sample_file, "r") as f:
+            content = f.read()
+    else:
+        # Generate inline fallback template
+        content = "Time,Amount," + ",".join([f"V{i}" for i in range(1, 21)]) + "\n"
+        content += "100.0,45.0," + ",".join(["0.1"] * 20) + "\n"
+        content += "200.0,4200.0," + ",".join(["-3.2"] * 20) + "\n"
+
+    return Response(
+        content=content,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="fraudguard_sample_transactions.csv"'},
+    )
 
 
 @app.get("/metrics")
@@ -455,7 +487,7 @@ async def metrics():
         "uptime_seconds": round(uptime, 2),
         "requests_per_second": round(request_count / uptime, 2) if uptime else 0,
         "model_loaded": model_loaded,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": get_utc_now_iso(),
     }
 
 
@@ -558,6 +590,23 @@ async def predict_fraud(
         is_fraud = fraud_prob >= 0.50
         confidence = get_confidence_score(fraud_prob)
 
+        # Compute model votes if ensemble is available
+        votes = {"xgboost": fraud_prob}
+        if ensemble_model and isinstance(ensemble_model, dict) and "models" in ensemble_model:
+            sub_models = ensemble_model["models"]
+            if "lgb" in sub_models:
+                try:
+                    lgb_prob = float(sub_models["lgb"].predict_proba(scaled_df)[0][1])
+                    votes["lightgbm"] = round(lgb_prob, 4)
+                except Exception:
+                    pass
+            if "rf" in sub_models:
+                try:
+                    rf_prob = float(sub_models["rf"].predict_proba(scaled_df)[0][1])
+                    votes["random_forest"] = round(rf_prob, 4)
+                except Exception:
+                    pass
+
         # Compute SHAP
         top_factors = compute_shap_factors(raw_df, scaled_df)
 
@@ -573,9 +622,10 @@ async def predict_fraud(
             confidence_score=confidence,
             explanation={"summary": f"Classified as {risk_level} risk with {round(fraud_prob*100, 1)}% fraud probability."},
             top_risk_factors=top_factors,
+            model_votes=votes,
             processing_time_ms=processing_time,
             model_version="FraudGuard-XGB-2.4",
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=get_utc_now_iso(),
         )
 
         # Async background log to SQLite
@@ -608,50 +658,105 @@ async def predict_batch_json(
     return await execute_batch(batch_request.transactions)
 
 
-@app.post("/predict-batch", response_model=BatchPredictionResponse)
+@app.post("/predict-batch")
 async def predict_batch_upload(
+    request: Request,
     file: Optional[UploadFile] = File(None),
+    download: bool = Query(False, description="Whether to return results as downloadable CSV"),
     _: None = Depends(check_model_dependency),
 ):
-    """Handle batch prediction via CSV file upload or multipart stream."""
-    if file is None:
-        raise HTTPException(status_code=400, detail="CSV file must be provided")
+    """Handle batch prediction via CSV file upload, JSON array, or multipart stream.
+    Supports row-level validation and optional downloadable CSV report."""
+    raw_df = None
 
-    try:
+    # 1. Handle file upload (CSV)
+    if file is not None and file.filename:
+        # File size check (max 10MB)
         content = await file.read()
-        df = pd.read_csv(io.BytesIO(content))
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Uploaded file exceeds 10MB limit")
+        try:
+            raw_df = pd.read_csv(io.BytesIO(content))
+        except Exception as parse_err:
+            raise HTTPException(status_code=400, detail=f"Error parsing CSV: {parse_err}")
 
-        # Check required columns
-        for c in ["Time", "Amount"]:
-            if c not in df.columns:
-                raise HTTPException(status_code=400, detail=f"CSV missing required column: {c}")
+    # 2. Handle JSON request body fallback
+    elif "application/json" in (request.headers.get("content-type") or ""):
+        try:
+            body = await request.json()
+            if isinstance(body, list):
+                tx_list = [TransactionRequest(**item) for item in body]
+                return await execute_batch(tx_list)
+            elif isinstance(body, dict) and "transactions" in body:
+                tx_list = [TransactionRequest(**item) for item in body["transactions"]]
+                return await execute_batch(tx_list)
+        except Exception as json_err:
+            raise HTTPException(status_code=400, detail=f"Invalid JSON batch body: {json_err}")
+    else:
+        raise HTTPException(status_code=400, detail="CSV file or JSON transaction payload must be provided")
 
-        tx_list = []
-        for idx, row in df.iterrows():
+    if raw_df is None or raw_df.empty:
+        raise HTTPException(status_code=400, detail="Provided dataset contains zero rows")
+
+    if len(raw_df) > 5000:
+        raise HTTPException(status_code=400, detail=f"Batch size exceeds maximum limit of 5,000 records (received {len(raw_df)})")
+
+    # Check required columns
+    for c in ["Time", "Amount"]:
+        if c not in raw_df.columns:
+            raise HTTPException(status_code=400, detail=f"CSV missing required column: {c}")
+
+    tx_list = []
+    row_errors = []
+    for idx, row in raw_df.iterrows():
+        try:
             tx_data = {
-                "Time": float(row["Time"]),
-                "Amount": float(row["Amount"]),
+                "Time": float(row["Time"]) if not pd.isna(row["Time"]) else 0.0,
+                "Amount": max(0.0, float(row["Amount"])) if not pd.isna(row["Amount"]) else 0.0,
                 "transaction_id": str(row.get("transaction_id", f"CSV-{idx}")),
             }
             for i in range(1, 21):
                 col_name = f"V{i}"
-                tx_data[col_name] = float(row.get(col_name, 0.0))
+                tx_data[col_name] = float(row[col_name]) if col_name in row and not pd.isna(row[col_name]) else 0.0
 
-            if "Hour" in row:
+            if "Hour" in row and not pd.isna(row["Hour"]):
                 tx_data["Hour"] = float(row["Hour"])
-            if "DayOfWeek" in row:
+            if "DayOfWeek" in row and not pd.isna(row["DayOfWeek"]):
                 tx_data["DayOfWeek"] = float(row["DayOfWeek"])
-            if "CustomerRiskScore" in row:
+            if "CustomerRiskScore" in row and not pd.isna(row["CustomerRiskScore"]):
                 tx_data["CustomerRiskScore"] = float(row["CustomerRiskScore"])
 
             tx_list.append(TransactionRequest(**tx_data))
+        except Exception as re:
+            row_errors.append(f"Row {idx+1}: {re}")
 
-        return await execute_batch(tx_list)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception(f"CSV batch processing error: {e}")
-        raise HTTPException(status_code=400, detail=f"Error parsing CSV: {e}")
+    if not tx_list:
+        raise HTTPException(status_code=400, detail=f"No valid rows parsed. Row errors: {row_errors[:5]}")
+
+    batch_res = await execute_batch(tx_list)
+
+    if download:
+        # Build CSV response
+        output = io.StringIO()
+        csv_writer = pd.DataFrame([
+            {
+                "Transaction_ID": p.transaction_id,
+                "Fraud_Probability": p.fraud_probability,
+                "Risk_Level": p.risk_level,
+                "Is_Fraud": "FRAUD" if p.is_fraud else "LEGITIMATE",
+                "Confidence_Score": p.confidence_score,
+                "Processing_Time_MS": p.processing_time_ms,
+            }
+            for p in batch_res.predictions
+        ])
+        csv_writer.to_csv(output, index=False)
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="fraudguard_batch_predictions.csv"'},
+        )
+
+    return batch_res
 
 
 async def execute_batch(transactions: List[TransactionRequest]) -> BatchPredictionResponse:
@@ -718,7 +823,7 @@ async def execute_batch(transactions: List[TransactionRequest]) -> BatchPredicti
                 top_risk_factors=None,
                 processing_time_ms=avg_time_ms,
                 model_version="FraudGuard-XGB-2.4",
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=get_utc_now_iso(),
             )
         )
 
@@ -747,7 +852,7 @@ async def reload_models():
     if load_models():
         return {
             "message": "Models reloaded successfully",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": get_utc_now_iso(),
         }
     raise HTTPException(status_code=500, detail="Failed to reload models")
 
@@ -773,7 +878,7 @@ async def internal_error_handler(request: Request, exc):
         status_code=500,
         content={
             "detail": "Internal server error",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": get_utc_now_iso(),
         },
     )
 
@@ -781,11 +886,11 @@ async def internal_error_handler(request: Request, exc):
 if __name__ == "__main__":
     import uvicorn
 
-    logger.info("🚀 Starting FraudGuard AI server on port 8000...")
+    port = int(os.environ.get("PORT", 8000))
+    logger.info(f"🚀 Starting FraudGuard AI server on 0.0.0.0:{port}...")
     uvicorn.run(
-        "fraud_api:app",
+        app,
         host="0.0.0.0",
-        port=8000,
-        reload=True,
+        port=port,
         log_level="info",
     )

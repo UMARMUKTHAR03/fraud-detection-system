@@ -79,3 +79,17 @@ def test_predict_batch_csv_upload():
     assert "batch_summary" in data
     assert data["batch_summary"]["total_transactions"] == 2
 
+
+def test_predict_batch_csv_download():
+    csv_content = "Time,Amount," + ",".join([f"V{i}" for i in range(1, 21)]) + "\n"
+    csv_content += "100.0,50.0," + ",".join(["0.1"] * 20) + "\n"
+    files = {"file": ("test_batch.csv", io.BytesIO(csv_content.encode("utf-8")), "text/csv")}
+    response = client.post("/predict-batch?download=true", files=files)
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "text/csv; charset=utf-8"
+    assert "attachment" in response.headers["content-disposition"]
+    text = response.text
+    assert "Transaction_ID" in text
+    assert "Fraud_Probability" in text
+    assert "Risk_Level" in text
+
