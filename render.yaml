@@ -20,7 +20,3 @@ services:
         value: /opt/render/project/src/data
       - key: ALLOWED_ORIGINS
         value: "https://umarmukthar03.github.io,http://localhost:3000,http://localhost:8000,http://127.0.0.1:5500"
-    disk:
-      name: fraudguard-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1

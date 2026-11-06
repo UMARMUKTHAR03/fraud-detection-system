@@ -94,7 +94,7 @@ graph TD
     E --> G["Soft-Voting Ensemble Engine (models/fraud_detection_ensemble.pkl)"]
     F --> H["Calibrated Risk Classifier (LOW, MEDIUM, HIGH, CRITICAL)"]
     F --> I["Explainable AI Engine (models/explainer.joblib - TreeSHAP)"]
-    H --> J["SQLite Transaction Logger (data/fraud_history.db / Persistent Disk)"]
+    H --> J["SQLite Transaction Logger (data/fraud_history.db / Ephemeral Storage)"]
     I --> J
     J --> K["JSON API Response with Latency & Confidence"]
     K --> B
@@ -110,7 +110,7 @@ fraud-detection-system/
 │   ├── raw/
 │   │   └── creditcard_transactions.csv  # Calibrated benchmark dataset (40,000 samples)
 │   ├── sample_transactions.csv          # 20-sample ready-to-test batch CSV
-│   └── fraud_history.db                 # Persistent SQLite transaction audit database
+│   └── fraud_history.db                 # SQLite transaction audit database (ephemeral on free tier)
 ├── docs/
 │   └── preview.svg                      # Platform architecture and preview diagram
 ├── models/
@@ -243,7 +243,8 @@ FraudGuard AI is pre-configured for automated one-click containerized deployment
 
 - **Blueprint File:** [`render.yaml`](render.yaml)
 - **Container Build:** [`Dockerfile`](Dockerfile) (Python 3.11-slim)
-- **Persistent Storage:** 1GB Persistent Disk mounted at `/app/data` to retain SQLite transaction logs (`data/fraud_history.db`).
+- **Free Tier Compatible:** Configured for Render's Free Web Service plan without persistent disk attachments.
+- **SQLite Prediction History Disclosure:** On Render Free services, SQLite transaction history (`data/fraud_history.db`) is stored on temporary, ephemeral disk storage (`DATA_DIR: /opt/render/project/src/data`). Prediction logs persist during active container runtime but may be reset after service restarts, scale-to-zero wakeups, or redeployments. For persistent enterprise storage, attach a managed database or persistent disk.
 
 **Deploy with Render Blueprint:**
 1. Fork or push this repository to GitHub.
@@ -257,7 +258,7 @@ FraudGuard AI is pre-configured for automated one-click containerized deployment
 python -m pytest tests/ -v
 ```
 
-*All 24 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, CORS security, SQLite persistence, and batch CSV handlers.*
+*All 24 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, CORS security, SQLite storage, and batch CSV handlers.*
 
 ---
 
