@@ -1,278 +1,208 @@
-# 🛡️ FraudGuard AI — Intelligent Financial Fraud Detection & Risk Analytics Platform
+# FraudGuard AI — Financial Fraud Detection & Risk Analytics Prototype
 
-[![Live Application](https://img.shields.io/badge/Live%20Platform-GitHub%20Pages-10b981?style=for-the-badge&logo=githubpages&logoColor=white)](https://umarmukthar03.github.io/fraud-detection-system/)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![XGBoost](https://img.shields.io/badge/XGBoost-Production%20Model-EB4223?style=for-the-badge&logo=xgboost&logoColor=white)](https://xgboost.ai)
-[![SHAP](https://img.shields.io/badge/SHAP-Explainable%20AI-FF6F00?style=for-the-badge&logo=plotly&logoColor=white)](https://shap.readthedocs.io)
-[![License](https://img.shields.io/badge/License-MIT%202026-10b981?style=for-the-badge)](./LICENSE)
-[![Engineer](https://img.shields.io/badge/Architect-UMAR%20MUKTHAR-8b5cf6?style=for-the-badge&logo=github)](https://github.com/UMARMUKTHAR03)
+[![Live frontend](https://img.shields.io/badge/Live%20Frontend-GitHub%20Pages-16a34a?logo=githubpages&logoColor=white)](https://umarmukthar03.github.io/fraud-detection-system/)
+[![Backend API](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fraudguard-ai-api-2xab.onrender.com/docs)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> 🌐 **Interactive Production Dashboard:** **[https://umarmukthar03.github.io/fraud-detection-system/](https://umarmukthar03.github.io/fraud-detection-system/)**
-> ⚡ *Real-time transaction scoring, dynamic risk tiers, SHAP local feature attributions, CSV batch uploads, and confusion matrix threshold tuning directly in your browser.*
+**FraudGuard AI** is a deployed, full-stack fraud-detection decision-support prototype. It combines an interactive browser dashboard, a FastAPI inference service, an XGBoost classifier, SHAP feature explanations, CSV batch scoring, and a transaction-history view.
 
----
+> **Important scope:** This is an educational/portfolio prototype evaluated on a calibrated synthetic benchmark. It is not a bank-integrated payment system, has not been validated on live bank/cardholder traffic, and must not be used to make real financial decisions. Its controls produce recommendations only; they do not block cards, reject payments, debit accounts, or send OTPs.
 
-## 🖼️ Platform Preview
+## Live application
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/UMARMUKTHAR03/fraud-detection-system/main/docs/preview.svg" alt="FraudGuard AI Enterprise Platform Preview" width="100%" />
-</div>
+| Component | URL | Hosting |
+|---|---|---|
+| Web dashboard | [Open FraudGuard AI](https://umarmukthar03.github.io/fraud-detection-system/) | GitHub Pages |
+| Backend health | [Check API health](https://fraudguard-ai-api-2xab.onrender.com/health) | Render Free |
+| Interactive API docs | [Open Swagger UI](https://fraudguard-ai-api-2xab.onrender.com/docs) | Render Free |
+| Source code | [GitHub repository](https://github.com/UMARMUKTHAR03/fraud-detection-system) | GitHub |
 
----
+The free Render instance may sleep when inactive, so its first request after inactivity can be slower. SQLite prediction history is stored on ephemeral service storage and can be lost after restart, scale-to-zero, or redeployment. Do not submit personal, financial, or other sensitive data to this public demo.
 
-## ⚡ Executive Overview
+## Key capabilities
 
-**FraudGuard AI** is a production-grade, low-latency financial fraud detection and risk analytics software platform. Designed for neobanks, payment processors, and e-commerce platforms, the engine performs transaction scoring in sub-millisecond time, classifying transactions into granular operational risk tiers:
+- **Live transaction inspector:** interactive transaction feature controls and risk scoring through the deployed API.
+- **Fraud risk tiers:** LOW, MEDIUM, HIGH, and CRITICAL classifications derived from the configured decision thresholds.
+- **Customer risk profile:** explicit `CustomerRiskScore` input with a documented 0–1 range and a displayed population baseline.
+- **Explainable predictions:** SHAP TreeExplainer feature attributions for individual predictions.
+- **Batch scoring:** JSON batch and CSV upload workflows, including downloadable CSV results.
+- **Prediction history:** recent prediction records stored in SQLite during the running Render instance lifetime.
+- **Model and service telemetry:** health status, model metadata, benchmark metrics, processing latency, and analytics endpoints.
+- **Operational context indicators:** Tor/proxy, unknown-device, and off-hours switches are labelled as auxiliary telemetry; they are not independent model inputs in the current trained feature schema unless explicitly mapped in a future model version.
 
-- 🟢 **LOW (< 25%)**: Recommend approval; typical genuine transaction baseline.
-- 🔵 **MEDIUM (25% – 49.99%)**: Recommend monitoring; moderate latent or velocity deviation.
-- 🟡 **HIGH (50% – 74.99%)**: Recommend step-up verification challenge (e.g. out-of-band OTP).
-- 🔴 **CRITICAL (≥ 75%)**: Recommend immediate transaction rejection and account block review.
+## Screenshots
 
----
+The following are actual screenshots supplied during manual verification of the deployed application. They are not mockups.
 
-## 📊 Measured Benchmark & Validation Performance
+### Live dashboard
 
-> **Synthetic Benchmark Disclosure**: All performance metrics reported in this project were evaluated on a calibrated financial transaction benchmark generated with realistic biometric, card velocity, PCA-distributed features, and an extreme 2.0% class imbalance (32,000 training samples, 8,000 holdout test samples). These metrics represent controlled algorithmic benchmarks and do not substitute for live production telemetry on real-world bank cardholder data.
+![FraudGuard AI live dashboard](docs/screenshots/dashboard-overview.png)
 
-The production model was selected following a leak-free 5-fold stratified cross-validation workflow and evaluated on an independent 20% holdout test partition (8,000 transactions). All metrics below are verified directly from models/metrics.json:
+### Critical-risk example
 
-| Model Candidate | 5-Fold CV ROC-AUC | 5-Fold CV PR-AUC | 5-Fold CV F1 | Holdout ROC-AUC | Holdout PR-AUC | Holdout Precision | Holdout Recall | Holdout F1 | Single Inference Latency (P50 / Mean) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **XGBoost (Production Champion)** | **0.9889 ± 0.0014** | **0.8991** | **0.8260** | **0.9691** | **0.8463** | **82.89%** | **77.50%** | **0.8010** | **1.18 ms / 1.33 ms** |
-| **LightGBM Classifier** | 0.9884 ± 0.0011 | 0.8820 | 0.7465 | 0.9743 | 0.8275 | 61.83% | 81.00% | 0.7013 | 1.82 ms / 2.01 ms |
-| **Random Forest (SMOTE)** | 0.9874 ± 0.0011 | 0.8563 | 0.7188 | 0.9733 | 0.8100 | 58.84% | 81.50% | 0.6834 | 4.60 ms / 5.12 ms |
-| **Logistic Regression (Baseline)** | 0.9884 ± 0.0022 | 0.8818 | 0.5324 | 0.9695 | 0.8226 | 33.85% | 88.00% | 0.4889 | 0.18 ms / 0.22 ms |
-| **Soft-Voting Ensemble** | — | — | — | 0.9751 | 0.8454 | 78.16% | 80.50% | 0.7931 | 3.20 ms / 3.65 ms |
+![Critical-risk transaction example](docs/screenshots/critical-risk-example.png)
 
-### 🎯 Model Selection Rationale: XGBoost vs. LightGBM
+### Legitimate low-risk example
 
-In real-world payment authorization systems with extreme class imbalance (2% fraud prevalence), **Precision-Recall AUC (PR-AUC)** and **False Positive Rate** are the critical selection criteria over raw ROC-AUC:
+![Legitimate low-risk transaction example](docs/screenshots/legitimate-low-risk-example.png)
 
-1. **Precision & False Alarm Suppression**: XGBoost achieved **82.89% precision** with only **32 False Positives** out of 7,840 legitimate transactions (0.41% FPR). By comparison, LightGBM generated **100 False Positives** (precision 61.83%). In financial operations, an additional 68 false alarms would represent a **312% increase in false decline customer friction** and analyst alert fatigue.
-2. **PR-AUC Dominance**: XGBoost delivered higher PR-AUC on both 5-fold cross-validation (**0.8991 vs. 0.8820**) and holdout evaluation (**0.8463 vs. 0.8275**).
-3. **F1-Score Balance**: XGBoost achieved an F1-score of **0.8010** compared to LightGBM's **0.7013**. While LightGBM captured 7 additional fraudulent events (recall 81.00% vs. 77.50%), it did so at the expense of triple the false positive volume.
-4. **Conclusion**: XGBoost was selected as the production champion because it delivers superior fraud prevention precision, optimal PR-AUC, and sub-2ms predictable latency.
+### Connected dashboard and transaction feed
 
-### ⏱️ Latency Benchmarking Methodology & Percentiles
+![Connected dashboard with prediction feed](docs/screenshots/connected-dashboard-history-feed.png)
 
-Inference latency was formally re-measured using **100 warm-up runs** followed by **1,000 repeated prediction iterations** on isolated single-record feature vectors using 	ime.perf_counter_ns() (scripts/measure_latency.py):
+> Batch CSV and Prediction History workflows were also manually reported as tested. Dedicated screenshots for those two views were not included in the supplied screenshots, so this README does not present fabricated images for them. Add genuine captures to `docs/screenshots/` when available.
 
-| Metric Stage | Mean | P50 (Median) | P90 | P95 | P99 | Throughput |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Single Prediction (predict_proba)** | **1.33 ms** | **1.18 ms** | **1.60 ms** | **1.77 ms** | **2.39 ms** | ~750 req/sec/core |
-| **End-to-End Single (Scaling + Predict)** | 2.43 ms | 2.30 ms | 2.95 ms | 3.24 ms | 3.65 ms | ~410 req/sec/core |
-| **Vectorized Micro-Batch (100 txns)** | 1.59 ms total | 1.37 ms total | 1.95 ms total | 2.08 ms total | 2.37 ms total | **0.016 ms / txn** |
+## Architecture
 
-### Production Confusion Matrix (Holdout @ 0.50 Threshold)
-- **True Negatives (Legitimate Cleared)**: 7,768 (99.59%)
-- **False Positives (False Alarms)**: 32 (0.41% False Positive Rate)
-- **False Negatives (Missed Fraud)**: 45
-- **True Positives (Fraud Prevented)**: 155
+![FraudGuard AI system architecture](docs/architecture.svg)
 
----
+### Prediction flow
 
-## 🧠 Explainable AI (SHAP TreeExplainer)
+1. The browser sends a JSON transaction or CSV batch to the FastAPI service over HTTPS.
+2. Pydantic validates the request schema and field bounds.
+3. The API aligns inputs to the ordered 25-feature model schema and applies the fitted scaler. Derived time features and documented population defaults are used where the API supports omitted optional fields.
+4. The XGBoost champion model returns a fraud probability and risk level.
+5. SHAP TreeExplainer creates local feature attributions for the result.
+6. The API returns the prediction and logs a history record to SQLite (ephemeral on Render Free).
 
-Every prediction through FraudGuard AI generates local feature attributions powered by `shap.TreeExplainer`:
-- **Directional Impact**: Distinguishes between *Fraud-Inducing* anomalies (e.g. sharp negative shifts in eigenvectors `V14`, `V12`, high amounts) and *Legitimate-Shielding* features.
-- **Top Factor Identification**: Highlights the top 6 contributing factors for security analysts and audit trails.
-- **Compliance Ready**: Supplies verifiable explanations for automated decisions under regulatory oversight.
+## Model evaluation
 
----
+The repository's `models/metrics.json` reports the following holdout results for the selected XGBoost model:
 
-## 🏗️ Technical Architecture & Pipeline
+| Metric | Holdout result |
+|---|---:|
+| Accuracy | 99.04% |
+| Precision | 82.89% |
+| Recall | 77.50% |
+| F1-score | 0.8010 |
+| ROC-AUC | 0.9691 |
+| PR-AUC | 0.8463 |
+| False positives | 32 |
+| False negatives | 45 |
 
-```mermaid
-graph TD
-    A["Web Browser / FinTech Client"] --> B["GitHub Pages SPA Frontend (HTML5 / Vanilla JS / CSS3)"]
-    B -- "HTTPS REST Requests (JSON / CSV)" --> C["Render Cloud Web Service (FastAPI / Uvicorn)"]
-    C --> D["Pydantic Validation & Ingestion Pipeline"]
-    D --> E["Feature Preprocessing & RobustScaler (models/scaler.joblib)"]
-    E --> F["Champion Model Inference (models/best_model.joblib - XGBoost)"]
-    E --> G["Soft-Voting Ensemble Engine (models/fraud_detection_ensemble.pkl)"]
-    F --> H["Calibrated Risk Classifier (LOW, MEDIUM, HIGH, CRITICAL)"]
-    F --> I["Explainable AI Engine (models/explainer.joblib - TreeSHAP)"]
-    H --> J["SQLite Transaction Logger (data/fraud_history.db / Ephemeral Storage)"]
-    I --> J
-    J --> K["JSON API Response with Latency & Confidence"]
-    K --> B
-```
+The benchmark contains 40,000 generated/calibrated transaction records, with 32,000 training records, 8,000 holdout records, and an approximately 2% fraud prevalence. These metrics describe the benchmark split only. They are not real-world banking performance guarantees.
 
----
+The XGBoost holdout confusion-matrix counts recorded in the benchmark are 7,768 true negatives, 32 false positives, 45 false negatives, and 155 true positives. LightGBM recorded 100 false positives on the same holdout evaluation: XGBoost therefore produced 68 fewer false positives at the evaluated operating point. This is a count comparison, not a claim about customer friction or production impact.
 
-## 📁 Repository Structure
+### Latency note
 
-```
-fraud-detection-system/
-├── data/
-│   ├── raw/
-│   │   └── creditcard_transactions.csv  # Calibrated benchmark dataset (40,000 samples)
-│   ├── sample_transactions.csv          # 20-sample ready-to-test batch CSV
-│   └── fraud_history.db                 # SQLite transaction audit database (ephemeral on free tier)
-├── docs/
-│   └── preview.svg                      # Platform architecture and preview diagram
-├── models/
-│   ├── best_model.joblib                # Serialized production XGBoost model
-│   ├── scaler.joblib                    # Leak-free fitted StandardScaler
-│   ├── explainer.joblib                 # Serialized SHAP TreeExplainer
-│   ├── feature_names.json               # Ordered feature schema
-│   ├── metrics.json                     # Verified benchmark & CV performance report
-│   ├── fraud_detection_ensemble.pkl     # Standalone soft-voting ensemble
-│   └── feature_engineering_pipeline.pkl # Advanced feature engineering pipeline
-├── src/
-│   ├── api/
-│   │   ├── auth.py                      # Optional auth token utilities
-│   │   └── fraud_api.py                 # FastAPI production application & endpoints
-│   ├── data_processing/
-│   │   ├── feature_engineering.py       # Velocity, stats, anomaly feature transformers
-│   │   └── generate_data.py             # Calibrated synthetic financial dataset generator
-│   └── models/
-│       ├── fraud_detector.py            # Model wrapper classes (LR, RF, XGB, LGBM, Ensemble)
-│       └── train_pipeline.py            # Reproducible 5-fold CV training pipeline
-├── tests/
-│   ├── conftest.py                      # Pytest fixtures and test paths
-│   ├── test_api.py                      # Core FastAPI endpoint tests
-│   ├── test_api_extensions.py           # Model-info, analytics, history, batch CSV upload tests
-│   ├── test_feature_engineering.py      # Feature transformation tests
-│   └── test_models.py                   # Model training and persistence tests
-├── index.html                           # Production Single-Page Application (SPA)
-├── requirements.txt                     # Pinned Python package dependencies
-├── pyproject.toml                       # Testing & linting tool configuration
-├── LICENSE                              # MIT License
-└── README.md                            # Complete technical documentation
-```
+The benchmark's approximately 1.18 ms median model inference latency is an isolated local model measurement. It does not represent end-to-end public API latency, cold-start time, network latency, database writes, or SHAP computation on Render.
 
----
+## Feature schema and missing values
 
-## 🔌 API Reference & Endpoints
+The current model schema contains `Time`, `Amount`, `V1`–`V20`, derived `Hour` and `DayOfWeek`, and `CustomerRiskScore` (25 ordered features). `CustomerRiskScore` is validated to the range 0–1. The backend contains empirical population defaults for fields that it permits to be omitted; imputation is a modelling assumption, not an observed customer value. Callers should send complete, correctly transformed feature vectors wherever possible and should not treat imputed PCA values as measured data.
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | Root endpoint returning platform name, version, and status |
-| `GET` | `/health` | Health check verifying model load state, load time, and uptime |
-| `GET` | `/model-info` | Metadata of the active production model, features, and CV metrics |
-| `GET` | `/analytics` | Model comparison table, confusion matrix, ROC/PR curves, top features |
-| `GET` | `/metrics` | Request throughput, processing latency, and server telemetry |
-| `GET` | `/history` | Query logged transaction predictions with limit, search, and risk filter |
-| `POST` | `/predict` | Real-time single transaction scoring with SHAP feature attributions |
-| `POST` | `/predict/batch` | High-throughput batch inference for JSON transaction arrays |
-| `POST` | `/predict-batch` | Multipart CSV upload endpoint for bulk batch scoring |
-| `POST` | `/reload-models` | Hot-reload model artifacts from `models/` without restarting |
+The UI's contextual operational flags are auxiliary telemetry. They should not be described as affecting the model probability unless the request schema, trained feature set, and model are updated together to include them.
 
-### Sample Transaction Request (`POST /predict`)
+## API reference
 
-```json
-{
-  "transaction_id": "TXN-849204",
-  "Time": 86400,
-  "Amount": 4850.00,
-  "V1": -1.35, "V2": 0.42, "V3": 1.25, "V4": 2.45, "V5": -0.88,
-  "V6": 0.12, "V7": -0.45, "V8": 0.08, "V9": 0.55, "V10": -1.85,
-  "V11": 0.92, "V12": -3.10, "V13": -0.25, "V14": -4.82, "V15": 0.14,
-  "V16": -1.20, "V17": -2.35, "V18": 0.11, "V19": 0.45, "V20": 0.38
-}
-```
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/` | Service information |
+| `GET` | `/health` | Health and model-loaded status |
+| `GET` | `/model-info` | Active model and feature metadata |
+| `GET` | `/analytics` | Benchmark analytics and feature information |
+| `GET` | `/metrics` | Request and service telemetry |
+| `GET` | `/history` | Prediction-history records (public demo; do not store sensitive data) |
+| `GET` | `/sample-template` | CSV input template |
+| `POST` | `/predict` | Single transaction prediction with SHAP explanation |
+| `POST` | `/predict/batch` | JSON batch prediction |
+| `POST` | `/predict-batch` | CSV upload and optional downloadable results |
 
-### Sample Response (`200 OK`)
+The current repository also defines `POST /reload-models`. **It must be protected by an administrative secret or disabled before the API is used beyond a public demo.** Do not expose an unauthenticated model-reload action to untrusted callers.
 
-```json
-{
-  "transaction_id": "TXN-849204",
-  "fraud_probability": 0.942,
-  "is_fraud": true,
-  "risk_level": "CRITICAL",
-  "confidence_score": 0.884,
-  "explanation": {
-    "summary": "Classified as CRITICAL risk with 94.2% fraud probability."
-  },
-  "top_risk_factors": [
-    { "feature": "V14", "value": -4.82, "shap_impact": 0.381, "correlation": "Fraud-Inducing" },
-    { "feature": "V12", "value": -3.10, "shap_impact": 0.198, "correlation": "Fraud-Inducing" },
-    { "feature": "Amount", "value": 4850.0, "shap_impact": 0.174, "correlation": "Fraud-Inducing" }
-  ],
-  "processing_time_ms": 1.45,
-  "model_version": "FraudGuard-XGB-2.4",
-  "timestamp": "2026-11-06T18:25:00.000Z"
-}
-```
+## Local development
 
----
-
-## 🚀 Quickstart Guide
-
-### 1. Installation
+### 1. Clone and create a virtual environment
 
 ```bash
-# Clone repository
 git clone https://github.com/UMARMUKTHAR03/fraud-detection-system.git
 cd fraud-detection-system
+python -m venv .venv
 
-# Create and activate virtual environment
-python -m venv venv
-.\venv\Scripts\activate       # Windows
-source venv/bin/activate     # Linux / macOS
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
 
-# Install dependencies
+# macOS / Linux
+source .venv/bin/activate
+```
+
+### 2. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Execute Training Pipeline
+> The current `requirements.txt` uses lower-bound version constraints, not a fully pinned lockfile. A reproducible lock should be generated and tested in the project's Python 3.11 environment before claiming deterministic installs.
+
+### 3. Run the API
 
 ```bash
-# Trains candidate models, performs 5-fold CV, fits SHAP explainer, and serializes artifacts
-python src/models/train_pipeline.py
+uvicorn src.api.fraud_api:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### 3. Launch the Backend API (Local Development)
+Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) for the interactive API documentation.
 
-```bash
-uvicorn src.api.fraud_api:app --host 0.0.0.0 --port 8000 --reload
-# or using root entrypoint:
-python app.py
-```
-
-The interactive Swagger UI will be available at `http://localhost:8000/docs`.
-
-### 4. Cloud Deployment (Render Blueprint Configuration)
-
-> **Deployment State Disclosure**: FraudGuard AI repository includes full Render Blueprint configuration (`render.yaml`) and Docker build recipes (`Dockerfile`). The cloud service can be launched on-demand on Render; when deployed, the GitHub Pages frontend can be connected via the header configuration modal.
-
-FraudGuard AI is pre-configured for automated one-click containerized deployment via Render:
-
-- **Blueprint File:** [`render.yaml`](render.yaml)
-- **Container Build:** [`Dockerfile`](Dockerfile) (Python 3.11-slim)
-- **Free Tier Compatible:** Configured for Render's Free Web Service plan without persistent disk attachments.
-- **SQLite Prediction History Disclosure:** On Render Free services, SQLite transaction history (`data/fraud_history.db`) is stored on temporary, ephemeral disk storage (`DATA_DIR: /opt/render/project/src/data`). Prediction logs persist during active container runtime but may be reset after service restarts, scale-to-zero wakeups, or redeployments. For persistent enterprise storage, attach a managed database or persistent disk.
-
-**Deploy with Render Blueprint:**
-1. Fork or push this repository to GitHub.
-2. Sign in to [Render](https://render.com) and create a **New > Blueprint**.
-3. Select your repository. Render automatically reads `render.yaml`, provisions the `fraudguard-ai-api` web service, and assigns an HTTPS URL (e.g., `https://fraudguard-ai-api.onrender.com`).
-4. In the live GitHub Pages frontend, click the **API Status** badge in the header, input your deployed Render URL, and test the live connection.
-
-### 4. Run the Full Test Suite
+### 4. Run tests
 
 ```bash
 python -m pytest tests/ -v
 ```
 
-*All 24 tests pass with 100% success rate across API endpoints, model architectures, feature engineering, CORS security, SQLite storage, and batch CSV handlers.*
+The latest local run reported by the project maintainer was **25 passed**. This result has not been independently rerun in this documentation bundle. Re-run the command in the current checkout before relying on that count.
+
+## Deployment
+
+### Frontend — GitHub Pages
+
+The published frontend is served from the `gh-pages` branch. The current `index.html` and `404.html` files are synchronized in the repository.
+
+### Backend — Render Free
+
+The backend is configured by `render.yaml` as a Python web service using `uvicorn src.api.fraud_api:app`. The deployed service URL is `https://fraudguard-ai-api-2xab.onrender.com`.
+
+Render Free does not provide persistent disks for this service. `DATA_DIR` therefore points to temporary service storage; SQLite prediction history may be reset when the instance restarts or redeploys. The live frontend can be configured to use the deployed backend through its API status/settings control.
+
+For backend code changes, review the diff, run tests, commit to `main`, and confirm the Render deployment is healthy before treating the change as live. For frontend changes, publish the matching files to `gh-pages` and verify the GitHub Pages site after the update.
+
+## Security, privacy, and limitations
+
+- This is a public portfolio prototype, not a hardened financial service.
+- Do not submit actual payment-card data, personal information, credentials, or confidential transactions.
+- Prediction history is publicly accessible in the current demo API and is not suitable for confidential data.
+- The model-reload endpoint requires protection or removal before broader public use.
+- CORS is not authentication. A public browser client cannot keep an administrative secret.
+- Add API gateway rate limiting, request-size limits, monitoring, authentication/authorization, secret management, and durable managed storage before any real deployment.
+- No bank/payment processor integration, PCI assessment, production authorization workflow, live card blocking, account freezing, or OTP delivery is implemented.
+- Performance and model metrics are based on the synthetic benchmark and local isolated timing experiments.
+
+## Repository structure
+
+```text
+fraud-detection-system/
+├── docs/
+│   ├── architecture.svg
+│   └── screenshots/
+├── models/                 # Trained model, scaler, explainer, feature schema, metrics
+├── src/
+│   ├── api/                 # FastAPI application
+│   ├── data_processing/    # Data generation and feature engineering
+│   └── models/              # Training pipeline and model wrappers
+├── tests/                  # API, feature-engineering, and model tests
+├── index.html              # Browser dashboard
+├── 404.html                # GitHub Pages SPA fallback
+├── render.yaml             # Render service configuration
+├── Dockerfile
+├── requirements.txt
+└── README.md
+```
+
+## License
+
+Released under the [MIT License](LICENSE).
 
 ---
 
-## 🔒 Security & Prototype Disclosure
-
-> [!NOTE]
-> **Prototype & Advisory Decision Notice**: This software platform serves as an algorithmic decision-support prototype. Model inferences and risk tier assignments provide recommendations only; the system does not execute live banking transactions, debit accounts, freeze credit cards, or dispatch live SMS OTPs. In an enterprise financial deployment, this service must be connected to bank core ledger rails behind an enterprise API gateway (e.g., Kong, Apigee) with mTLS authentication, PCI-DSS compliance audits, and hardware security modules (HSM).
-
----
-
-## 📄 License & Attribution
-
-This project is open-source under the **[MIT License](./LICENSE)**.
-
-**Architected & Developed by [UMAR MUKTHAR](https://github.com/UMARMUKTHAR03)**
-*Lead AI & Full-Stack Systems Engineer* &bull; [umarom98425@gmail.com](mailto:umarom98425@gmail.com)  
-*Copyright (c) 2026 UMAR MUKTHAR. All rights reserved.*
+**Author:** [Umar Mukthar](https://github.com/UMARMUKTHAR03)

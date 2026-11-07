@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="920" viewBox="0 0 1440 920" role="img" aria-labelledby="title desc">
+<title id="title">FraudGuard AI system architecture</title>
+<desc id="desc">Browser frontend sends JSON and CSV requests to a FastAPI service. The API validates inputs, aligns features and scales them, runs XGBoost inference and SHAP explanations, logs predictions to temporary SQLite storage on Render Free, and returns responses to the frontend.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07101f"/><stop offset="1" stop-color="#101a2c"/></linearGradient>
+ <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".25"/></filter>
+ <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0 L0 6 L9 3Z" fill="#38bdf8"/></marker>
+ <style>
+ .h{font:700 30px Arial,sans-serif;fill:#f8fafc}.sub{font:15px Arial,sans-serif;fill:#94a3b8}.tag{font:700 12px Arial,sans-serif;fill:#7dd3fc;letter-spacing:1.3px}.t{font:700 19px Arial,sans-serif;fill:#f8fafc}.d{font:14px Arial,sans-serif;fill:#cbd5e1}.card{fill:#111c30;stroke:#334155;stroke-width:1.5;rx:18;filter:url(#shadow)}.a{fill:none;stroke:#38bdf8;stroke-width:3;marker-end:url(#arr)}
+ </style>
+</defs>
+<rect width="1440" height="920" fill="url(#bg)"/>
+<text x="72" y="66" class="h">FraudGuard AI — System Architecture</text><text x="72" y="98" class="sub">Deployed decision-support prototype • GitHub Pages + Render FastAPI</text>
+<rect x="72" y="145" width="1296" height="108" class="card"/><text x="108" y="185" class="tag">CLIENT LAYER</text><text x="108" y="220" class="t">GitHub Pages Frontend</text><text x="520" y="185" class="d">Live Inspector • Customer Risk Score • Batch CSV • Prediction History • SHAP panels</text><text x="520" y="215" class="d">HTML • CSS • Vanilla JavaScript</text>
+<path d="M720 253V295" class="a"/><text x="745" y="282" class="tag">HTTPS / JSON / CSV</text>
+<path d="M825 310V260" class="a"/><text x="846" y="286" class="tag">API RESPONSE</text>
+<rect x="72" y="310" width="1296" height="108" class="card"/><text x="108" y="350" class="tag">API LAYER</text><text x="108" y="386" class="t">Render Web Service — FastAPI / Uvicorn</text><text x="720" y="350" class="d">Health • Model info • Analytics • Single prediction • Batch prediction • History</text>
+<path d="M720 418V466" class="a"/>
+<rect x="72" y="480" width="390" height="148" class="card"/><text x="102" y="520" class="tag">INGESTION</text><text x="102" y="558" class="t">Pydantic Validation</text><text x="102" y="588" class="d">Required fields • Bounds • Feature schema</text><text x="102" y="610" class="d">Documented empirical defaults (where optional)</text>
+<rect x="525" y="480" width="390" height="148" class="card"/><text x="555" y="520" class="tag">PREPROCESSING</text><text x="555" y="558" class="t">Feature Alignment &amp; Scaling</text><text x="555" y="588" class="d">Ordered 25-feature model schema</text><text x="555" y="610" class="d">Fitted scaler • Derived time features</text>
+<rect x="988" y="480" width="380" height="148" class="card"/><text x="1018" y="520" class="tag">INFERENCE</text><text x="1018" y="558" class="t">XGBoost Champion Model</text><text x="1018" y="588" class="d">Fraud probability • Risk tier • Confidence</text><text x="1018" y="610" class="d">Benchmark model comparisons</text>
+<path d="M462 554H515" class="a"/><path d="M915 554H978" class="a"/>
+<path d="M1178 628V678H380V680" class="a"/>
+<rect x="72" y="690" width="615" height="150" class="card"/><text x="102" y="730" class="tag">EXPLAINABILITY</text><text x="102" y="770" class="t">SHAP TreeExplainer</text><text x="102" y="801" class="d">Local feature attributions • Top risk factors • Explanation payload</text>
+<rect x="748" y="690" width="620" height="150" class="card"/><text x="778" y="730" class="tag">AUDIT HISTORY</text><text x="778" y="770" class="t">SQLite Transaction Log</text><text x="778" y="801" class="d">Prediction records • Risk label • Score • Timestamp • Explanation</text><text x="778" y="825" class="sub">Render Free: ephemeral storage; records can be lost on restart/redeploy</text>
+<path d="M687 765H738" class="a"/>
+<text x="72" y="884" class="sub">Advisory prototype only • No bank rails, payment execution, card blocking, account freezing, or OTP integration</text>
+</svg>

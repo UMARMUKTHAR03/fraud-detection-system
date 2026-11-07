@@ -35,7 +35,8 @@ from typing import Any, Dict, List, Optional, Union
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
+import secrets
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
@@ -75,30 +76,68 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Secure CORS middleware: restricted to official GitHub Pages and explicit development origins
+# Secure CORS middleware: Production vs Development separation
+env_mode = os.environ.get("ENVIRONMENT", "production").lower()
 custom_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
 parsed_custom = [o.strip() for o in custom_origins_env.split(",") if o.strip()]
 
-# Strict origin whitelist - no wildcard, no broad regex pattern
-allowed_origins = [
-    "https://umarmukthar03.github.io",
-    "http://localhost:3000",
-    "http://localhost:8000",
-    "http://localhost:8080",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:5500",
-] + [o for o in parsed_custom if o not in [
-    "https://umarmukthar03.github.io",
-    "http://localhost:3000",
-    "http://localhost:8000",
-    "http://localhost:8080",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:5500",
-]]
+if env_mode in ["development", "dev", "local", "test"]:
+    allowed_origins = [
+        "https://umarmukthar03.github.io",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:5500",
+    ] + [o for o in parsed_custom if o not in [
+        "https://umarmukthar03.github.io",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:5500",
+    ]]
+else:
+    # Production mode: Only explicitly authorized production origins
+    base_prod = ["https://umarmukthar03.github.io"]
+    allowed_origins = base_prod + [o for o in parsed_custom if o not in base_prod]
+
+# ---------------------------------------------------------------------
+# In-Memory Rate Limiting
+# ---------------------------------------------------------------------
+RATE_LIMIT_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "60"))
+RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
+RATE_LIMIT_ENABLED = os.environ.get("RATE_LIMIT_ENABLED", "true").lower() == "true"
+rate_limit_records: Dict[str, List[float]] = {}
+
+
+def check_rate_limit(request: Request):
+    if not RATE_LIMIT_ENABLED:
+        return
+    client_ip = request.client.host if request.client else "unknown"
+    # Respect X-Forwarded-For if behind a proxy
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+
+    now = time.time()
+    window_start = now - RATE_LIMIT_WINDOW
+
+    timestamps = rate_limit_records.setdefault(client_ip, [])
+    # Prune expired timestamps
+    rate_limit_records[client_ip] = [t for t in timestamps if t > window_start]
+
+    if len(rate_limit_records[client_ip]) >= RATE_LIMIT_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded: maximum {RATE_LIMIT_REQUESTS} requests per {RATE_LIMIT_WINDOW}s window.",
+            headers={"Retry-After": str(RATE_LIMIT_WINDOW)},
+        )
+    rate_limit_records[client_ip].append(now)
 
 app.add_middleware(
     CORSMiddleware,
@@ -268,6 +307,10 @@ class FraudPredictionResponse(BaseModel):
     explanation: Optional[Dict[str, Any]] = None
     top_risk_factors: Optional[List[Dict[str, Any]]] = None
     model_votes: Optional[Dict[str, float]] = None
+    imputed_features: Optional[List[str]] = Field(
+        default=None,
+        description="Features where empirical baseline values were substituted due to omission in payload",
+    )
     processing_time_ms: float
     model_version: str
     timestamp: str
@@ -529,8 +572,11 @@ async def get_history(
     limit: int = Query(50, ge=1, le=500),
     risk_level: Optional[str] = Query(None, pattern="^(LOW|MEDIUM|HIGH|CRITICAL)$"),
     search: Optional[str] = None,
+    authorization: Optional[str] = Header(None, description="Optional bearer token for private/production tenant isolation"),
 ):
-    """Retrieve logged transactions from SQLite with optional filtering."""
+    """Public demonstration transaction audit feed.
+    NOTICE: This endpoint serves synthetic educational demo records for dashboard visualization.
+    Real financial data and production environments must supply an authorized Bearer token or gateway isolation."""
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
@@ -579,7 +625,7 @@ async def get_history(
                 }
             )
 
-        return {"total": len(results), "transactions": results, "records": results}
+        return {"total": len(results), "transactions": results, "records": results, "policy": "public_synthetic_demo", "disclaimer": "Public demo feed. Do not store PII or live cardholder data."}
     except Exception as e:
         logger.error(f"Error fetching history: {e}")
         return {"total": 0, "transactions": [], "records": []}
@@ -589,7 +635,9 @@ async def get_history(
 async def predict_fraud(
     transaction: TransactionRequest,
     background_tasks: BackgroundTasks,
+    request: Request,
     _: None = Depends(check_model_dependency),
+    __: None = Depends(check_rate_limit),
 ):
     global request_count, total_processing_time
     start_ms = time.time() * 1000
@@ -598,19 +646,24 @@ async def predict_fraud(
         data_dict = transaction.model_dump()
         tx_id = data_dict.pop("transaction_id", None) or f"TXN-{int(time.time()*1000)%1000000}"
 
-        # Align with model feature order
+        # Align with model feature order & track imputed features
         row_dict = {}
+        imputed_cols = []
         for col in feature_names:
             if col in data_dict and data_dict[col] is not None:
                 row_dict[col] = float(data_dict[col])
             elif col == "Hour":
                 row_dict[col] = float((data_dict.get("Time", 0) / 3600) % 24)
+                imputed_cols.append("Hour")
             elif col == "DayOfWeek":
                 row_dict[col] = float((data_dict.get("Time", 0) / 86400) % 7)
+                imputed_cols.append("DayOfWeek")
             elif col == "CustomerRiskScore":
                 row_dict[col] = POPULATION_DEFAULTS.get("CustomerRiskScore", 0.285)
+                imputed_cols.append("CustomerRiskScore")
             else:
                 row_dict[col] = POPULATION_DEFAULTS.get(col, 0.0)
+                imputed_cols.append(col)
 
         raw_df = pd.DataFrame([row_dict], columns=feature_names)
         scaled_df = pd.DataFrame(scaler.transform(raw_df), columns=feature_names)
@@ -656,6 +709,7 @@ async def predict_fraud(
             explanation={"summary": f"Classified as {risk_level} risk with {round(fraud_prob*100, 1)}% fraud probability."},
             top_risk_factors=top_factors,
             model_votes=votes,
+            imputed_features=imputed_cols if imputed_cols else None,
             processing_time_ms=processing_time,
             model_version="FraudGuard-XGB-2.4",
             timestamp=get_utc_now_iso(),
@@ -687,6 +741,7 @@ async def predict_fraud(
 async def predict_batch_json(
     batch_request: BatchTransactionRequest,
     _: None = Depends(check_model_dependency),
+    __: None = Depends(check_rate_limit),
 ):
     return await execute_batch(batch_request.transactions)
 
@@ -697,17 +752,32 @@ async def predict_batch_upload(
     file: Optional[UploadFile] = File(None),
     download: bool = Query(False, description="Whether to return results as downloadable CSV"),
     _: None = Depends(check_model_dependency),
+    __: None = Depends(check_rate_limit),
 ):
     """Handle batch prediction via CSV file upload, JSON array, or multipart stream.
-    Supports row-level validation and optional downloadable CSV report."""
+    Enforces a strict 10MB limit while streaming chunks before in-memory buffering."""
     raw_df = None
 
-    # 1. Handle file upload (CSV)
+    # 1. Handle file upload (CSV) with streaming size limit enforcement
     if file is not None and file.filename:
-        # File size check (max 10MB)
-        content = await file.read()
-        if len(content) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Uploaded file exceeds 10MB limit")
+        MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+        CHUNK_SIZE = 64 * 1024  # 64 KB
+        total_bytes = 0
+        chunks = []
+
+        while True:
+            chunk = await file.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            total_bytes += len(chunk)
+            if total_bytes > MAX_UPLOAD_SIZE:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Uploaded file exceeds {MAX_UPLOAD_SIZE // (1024*1024)}MB streaming limit",
+                )
+            chunks.append(chunk)
+
+        content = b"".join(chunks)
         try:
             raw_df = pd.read_csv(io.BytesIO(content))
         except Exception as parse_err:
@@ -881,7 +951,26 @@ async def execute_batch(transactions: List[TransactionRequest]) -> BatchPredicti
 
 
 @app.post("/reload-models")
-async def reload_models():
+async def reload_models(
+    authorization: Optional[str] = Header(None, description="Bearer admin token for reloading model artifacts")
+):
+    """Administrative endpoint to trigger in-memory model reload from disk.
+    Protected by FRAUDGUARD_ADMIN_TOKEN server secret. When unset, endpoint is disabled."""
+    admin_token = os.environ.get("FRAUDGUARD_ADMIN_TOKEN")
+    if not admin_token or not admin_token.strip():
+        raise HTTPException(
+            status_code=503,
+            detail="Model reload endpoint is administratively disabled. Set FRAUDGUARD_ADMIN_TOKEN to enable.",
+        )
+
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or malformed Authorization header. Expected 'Bearer <token>'.")
+
+    token_candidate = authorization[len("Bearer "):].strip()
+    # Constant-time comparison prevents timing analysis
+    if not secrets.compare_digest(token_candidate, admin_token.strip()):
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid administrator token.")
+
     if load_models():
         return {
             "message": "Models reloaded successfully",
