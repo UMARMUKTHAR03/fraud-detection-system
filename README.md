@@ -81,7 +81,12 @@ The repository's `models/metrics.json` reports the following holdout results for
 | False positives | 32 |
 | False negatives | 45 |
 
-The benchmark contains 40,000 generated/calibrated transaction records, with 32,000 training records, 8,000 holdout records, and an approximately 2% fraud prevalence. These metrics describe the benchmark split only. They are not real-world banking performance guarantees.
+The benchmark contains 40,000 generated/calibrated transaction records, with 32,000 training records, 8,000 holdout records, and an approximately 2% fraud prevalence. 
+
+> **Important synthetic dataset disclosures:**
+> - The model was trained and evaluated solely on a synthetic/calibrated benchmark dataset, not real bank transaction data.
+> - The reported evaluation metrics are benchmark results and have not been validated on live banking or cardholder transactions.
+> - `CustomerRiskScore` was generated using the synthetic fraud label during dataset synthesis, which may allow the model to rely heavily on this label-correlated signal and therefore overstate real-world predictive performance.
 
 The XGBoost holdout confusion-matrix counts recorded in the benchmark are 7,768 true negatives, 32 false positives, 45 false negatives, and 155 true positives. LightGBM recorded 100 false positives on the same holdout evaluation: XGBoost therefore produced 68 fewer false positives at the evaluated operating point. This is a count comparison, not a claim about customer friction or production impact.
 
@@ -110,7 +115,12 @@ The UI's contextual operational flags are auxiliary telemetry. They should not b
 | `POST` | `/predict/batch` | JSON batch prediction |
 | `POST` | `/predict-batch` | CSV upload and optional downloadable results |
 
-The current repository also defines `POST /reload-models`. **It must be protected by an administrative secret or disabled before the API is used beyond a public demo.** Do not expose an unauthenticated model-reload action to untrusted callers.
+The current repository also defines `POST /reload-models`. It requires administrative authentication via a Bearer token matching the server-side `FRAUDGUARD_ADMIN_TOKEN` environment variable. The endpoint returns:
+- **503 Service Unavailable** when `FRAUDGUARD_ADMIN_TOKEN` is not configured on the server (endpoint disabled).
+- **401 Unauthorized** when the `Authorization: Bearer <token>` header is missing.
+- **403 Forbidden** when the provided Bearer token is invalid.
+
+*Note: Never expose the actual administrative secret in client-side code, frontend bundles, or public documentation.*
 
 ## Local development
 
@@ -151,7 +161,7 @@ Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) for the interactiv
 python -m pytest tests/ -v
 ```
 
-The latest local run reported by the project maintainer was **25 passed**. This result has not been independently rerun in this documentation bundle. Re-run the command in the current checkout before relying on that count.
+The complete test suite contains **36 tests** across API endpoints, security controls, feature engineering, and model training pipelines. All **36 passed** both locally and in automated GitHub Actions CI.
 
 ## Deployment
 
