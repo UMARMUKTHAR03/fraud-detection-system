@@ -151,3 +151,27 @@ def test_rate_limiting_enforcement(monkeypatch):
 
     assert 429 in statuses
     rate_limit_records.clear()
+
+
+def test_synthetic_fraud_dataset_generator_writable_hours():
+    """
+    Regression test ensuring fraud_hours array extracted from DataFrame
+    is a writable numpy array and supports in-place boolean index assignment.
+    """
+    from src.data_processing.generate_data import FraudDatasetGenerator, DatasetConfig
+    import numpy as np
+
+    gen = FraudDatasetGenerator(DatasetConfig(n_samples=200, fraud_rate=0.2, random_state=42))
+    df = gen.create_fraud_dataset()
+
+    assert "Hour" in df.columns
+    assert "Class" in df.columns
+    assert df["Class"].sum() > 0
+    # Verify that the generated fraud-hour values are valid hours
+    fraud_hours = df.loc[df["Class"] == 1, "Hour"].to_numpy(copy=True)
+    assert fraud_hours.flags.writeable is True
+    # Test that in-place modification works without raising ValueError
+    fraud_hours[fraud_hours > 12] = 0
+    assert (fraud_hours <= 12).all()
+
+

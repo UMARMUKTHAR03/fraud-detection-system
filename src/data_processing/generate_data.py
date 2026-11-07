@@ -170,7 +170,7 @@ class FraudDatasetGenerator:
         fraud_mask = df["Class"] == 1
         if fraud_mask.sum() > 0:
             # Bias fraud towards night hours (0-6) and late evening (22-24)
-            fraud_hours = df.loc[fraud_mask, "Hour"].values
+            fraud_hours = df.loc[fraud_mask, "Hour"].to_numpy(copy=True)
             night_mask = np.random.random(len(fraud_hours)) < 0.4
             fraud_hours[night_mask] = np.random.choice([0, 1, 2, 3, 4, 5, 22, 23], 
                                                        size=night_mask.sum())
